@@ -93,8 +93,8 @@ if RUNNING_ON_PI:
 door_button = get_door_button()
 
 if RUNNING_ON_PI and door_button:
-    # MC-38 NC switch: door open = circuit breaks = button "released"
-    door_button.when_released = handle_door_open
+    # MC-38: door open = magnet moves away = pin goes LOW = button "pressed"
+    door_button.when_pressed = handle_door_open
 
     print("🛡️  Physical Security ARMED")
     print(f"    MC-38  : BCM17  (Physical Pin 11)")
@@ -116,7 +116,7 @@ if RUNNING_ON_PI and door_button:
     try:
         while True:
             data       = get_sensor_data()
-            door_state = "OPEN ⚠️ " if not door_button.is_pressed else "CLOSED ✅"
+            door_state = "OPEN ⚠️ " if door_button.is_pressed else "CLOSED ✅"
             print(f"[{time.strftime('%H:%M:%S')}]  "
                   f"Door: {door_state:<13} | "
                   f"Temp: {data['temperature']}°C | "
