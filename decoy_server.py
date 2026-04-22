@@ -10,17 +10,14 @@ Routes:
 """
 
 import datetime
-import json
 from flask import Flask, request, render_template_string, jsonify
 
 from decoy_alert import send_telegram_alert
-from sensor_hub import setup_gpio, start_dht_thread, trigger_alarm_async, get_sensor_data
+from sensor_hub import trigger_alarm_async, get_sensor_data
 
 app = Flask(__name__)
-
-# ── Start hardware on import ─────────────────────────────────────────────────
-setup_gpio()
-start_dht_thread()
+# NOTE: GPIO init is owned by hardware_trap.py.
+# This server only reads sensor state and triggers the alarm.
 
 # ── Honeypot HTML ────────────────────────────────────────────────────────────
 FAKE_PAGE_HTML = """

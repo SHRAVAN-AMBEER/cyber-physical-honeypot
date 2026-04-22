@@ -18,13 +18,11 @@ import time
 from flask import Flask, render_template, jsonify, request
 
 from decoy_alert import send_telegram_alert
-from sensor_hub import setup_gpio, start_dht_thread, trigger_alarm_async, get_sensor_data
+from sensor_hub import trigger_alarm_async, get_sensor_data
 
 app = Flask(__name__)
-
-# ── Start hardware ────────────────────────────────────────────────────────────
-setup_gpio()
-start_dht_thread()
+# NOTE: GPIO init is owned by hardware_trap.py.
+# This dashboard only reads sensor state and triggers the alarm.
 
 # ── In-memory event log ───────────────────────────────────────────────────────
 _events = []

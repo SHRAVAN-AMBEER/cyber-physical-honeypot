@@ -1,114 +1,169 @@
 """
-sensor_hub.py - Shared hardware state module for the Cyber-Physical Decoy System.
-All other modules import from here to read DHT-11 data and control GPIO outputs.
-
-Raspberry Pi GPIO Connections:
-  DHT-11 Data Pin  → GPIO 4  (Physical Pin 7)
-  MC-38 Door Switch → GPIO 14 (Physical Pin 8)  [other leg to GND]
-  Active Buzzer (+) → GPIO 18 (Physical Pin 12) [(-) to GND]
-  Red LED (+ anode) → GPIO 23 (Physical Pin 16) [via 330Ω resistor to GND]
-  3.3V              → Physical Pin 1             [DHT-11 VCC]
-  GND               → Physical Pin 6             [common ground]
+sensor_hub.py — Shared GPIO/Sensor state for Cyber-Physical Decoy System
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GPIO wiring:
+  DHT-11 DATA  → GPIO 4   (Physical Pin 7)
+  MC-38 Switch → GPIO 14  (Physical Pin 8)  ← other wire to GND
+  Buzzer   (+) → GPIO 18  (Physical Pin 12) ← (−) to GND
+  Red LED  (+) → GPIO 23  (Physical Pin 16) ← (−) via 330Ω to GND
+  3.3V         → Physical Pin 1  (DHT-11 VCC)
+  GND          → Physical Pin 6  (common ground)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT: Call sensor_hub.init() ONCE at startup — from hardware_trap.py only.
+           decoy_server.py and decoy_dashboard.py just read get_sensor_data().
 """
 
 import time
 import threading
+import random
 
-# ── Try to import real GPIO libs; fall back to mock for development on PC ──
+# ── GPIO library detection ────────────────────────────────────────────────────
 try:
-    import Adafruit_DHT
     import RPi.GPIO as GPIO
+    import Adafruit_DHT
     RUNNING_ON_PI = True
+    print("✅ RPi.GPIO + Adafruit_DHT loaded — HARDWARE MODE")
 except (ImportError, RuntimeError):
     RUNNING_ON_PI = False
-    print("⚠️  GPIO/DHT libs not found – running in SIMULATION mode.")
+    print("⚠️  GPIO libs not found — running in SIMULATION mode (PC/dev)")
 
-# ── Pin Configuration ────────────────────────────────────────────────────────
-DHT_SENSOR_TYPE  = 11          # DHT-11
-DHT_DATA_PIN     = 4           # GPIO 4
-DOOR_SENSOR_PIN  = 14          # GPIO 14  (MC-38)
-BUZZER_PIN       = 18          # GPIO 18  (Active Buzzer)
-RED_LED_PIN      = 23          # GPIO 23  (Red LED)
+# ── Pin numbers (BCM numbering) ───────────────────────────────────────────────
+DHT_DATA_PIN    = 4    # DHT-11 data
+DOOR_SENSOR_PIN = 14   # MC-38 magnetic reed switch
+BUZZER_PIN      = 18   # Active buzzer
+RED_LED_PIN     = 23   # Red LED
 
-# ── Shared sensor state (thread-safe) ───────────────────────────────────────
-_lock = threading.Lock()
+# ── Shared state (read by dashboard + server via get_sensor_data()) ───────────
+_lock  = threading.Lock()
 _state = {
-    "temperature": 24.5,
-    "humidity": 58.0,
-    "door_open": False,
-    "alarm_active": False,
-    "last_updated": time.strftime("%Y-%m-%d %H:%M:%S"),
+    "temperature"  : 24.5,
+    "humidity"     : 58.0,
+    "door_open"    : False,
+    "alarm_active" : False,
+    "last_updated" : time.strftime("%Y-%m-%d %H:%M:%S"),
 }
+
+_gpio_ready = False   # guards against double-init
 
 
 def get_sensor_data():
-    """Return a copy of the current sensor state (thread-safe)."""
+    """Thread-safe snapshot of current sensor state."""
     with _lock:
         return dict(_state)
 
 
-def _update_state(**kwargs):
+def _set(**kw):
     with _lock:
-        _state.update(kwargs)
+        _state.update(kw)
         _state["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-# ── GPIO Setup ───────────────────────────────────────────────────────────────
-def setup_gpio():
-    if not RUNNING_ON_PI:
+# ── GPIO Initialisation (call ONCE from hardware_trap.py) ────────────────────
+def init():
+    """Set up all GPIO pins. Must be called exactly once."""
+    global _gpio_ready
+    if _gpio_ready:
         return
+    if not RUNNING_ON_PI:
+        _gpio_ready = True
+        return
+
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
+
+    # MC-38: input with internal pull-up.
+    #   Door CLOSED  → magnet keeps switch CLOSED  → pin pulled LOW  (0)
+    #   Door OPENED  → magnet moves away, switch opens → pin goes HIGH (1)
     GPIO.setup(DOOR_SENSOR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(BUZZER_PIN,      GPIO.OUT, initial=GPIO.LOW)
-    GPIO.setup(RED_LED_PIN,     GPIO.OUT, initial=GPIO.LOW)
+
+    # Buzzer and LED: outputs, start LOW (off)
+    GPIO.setup(BUZZER_PIN,  GPIO.OUT)
+    GPIO.setup(RED_LED_PIN, GPIO.OUT)
+    GPIO.output(BUZZER_PIN,  GPIO.LOW)
+    GPIO.output(RED_LED_PIN, GPIO.LOW)
+
+    _gpio_ready = True
+    print(f"✅ GPIO ready  — Door: BCM{DOOR_SENSOR_PIN} | "
+          f"Buzzer: BCM{BUZZER_PIN} | LED: BCM{RED_LED_PIN}")
 
 
-def trigger_alarm():
-    """Activate buzzer + red LED for 10 seconds."""
-    _update_state(alarm_active=True)
-    print("🚨 ALARM TRIGGERED — Buzzer ON, Red LED ON")
+# ── Alarm: Buzzer + LED ───────────────────────────────────────────────────────
+def _alarm_worker():
+    """Runs in its own thread — keeps alarm on for 10 s then turns off."""
+    _set(alarm_active=True)
+    print("🔴 ALARM ON  — Buzzer HIGH, LED HIGH")
+
     if RUNNING_ON_PI:
-        GPIO.output(BUZZER_PIN, GPIO.HIGH)
+        GPIO.output(BUZZER_PIN,  GPIO.HIGH)
         GPIO.output(RED_LED_PIN, GPIO.HIGH)
+
     time.sleep(10)
+
     if RUNNING_ON_PI:
-        GPIO.output(BUZZER_PIN, GPIO.LOW)
+        GPIO.output(BUZZER_PIN,  GPIO.LOW)
         GPIO.output(RED_LED_PIN, GPIO.LOW)
-    _update_state(alarm_active=False)
-    print("✅ Alarm cleared.")
+
+    _set(alarm_active=False)
+    print("🟢 ALARM OFF — Buzzer LOW,  LED LOW")
 
 
 def trigger_alarm_async():
-    """Run alarm in a background thread so it doesn't block."""
-    t = threading.Thread(target=trigger_alarm, daemon=True)
+    """Start the alarm in a background thread (non-blocking)."""
+    t = threading.Thread(target=_alarm_worker, daemon=True, name="AlarmThread")
     t.start()
 
 
-# ── DHT-11 Polling Loop ──────────────────────────────────────────────────────
-def _dht_loop():
-    import random
+# ── DHT-11 polling loop ───────────────────────────────────────────────────────
+def _dht_worker():
     while True:
         if RUNNING_ON_PI:
-            humidity, temperature = Adafruit_DHT.read_retry(
-                Adafruit_DHT.DHT11, DHT_DATA_PIN
-            )
-            if humidity is not None and temperature is not None:
-                _update_state(temperature=round(temperature, 1),
-                              humidity=round(humidity, 1))
+            try:
+                humidity, temperature = Adafruit_DHT.read_retry(
+                    Adafruit_DHT.DHT11, DHT_DATA_PIN, retries=5
+                )
+                if temperature is not None and humidity is not None:
+                    _set(
+                        temperature=round(float(temperature), 1),
+                        humidity=round(float(humidity), 1),
+                    )
+                    print(f"🌡️  DHT-11: {temperature:.1f}°C  💧{humidity:.1f}%")
+                else:
+                    print("⚠️  DHT-11 read returned None — retrying…")
+            except Exception as e:
+                print(f"⚠️  DHT-11 error: {e}")
         else:
-            # Simulate realistic fluctuations in dev/test mode
+            # Smooth simulation for PC dev/testing
             with _lock:
-                base_t = _state["temperature"]
-                base_h = _state["humidity"]
-            _update_state(
-                temperature=round(base_t + random.uniform(-0.3, 0.3), 1),
-                humidity=round(max(30, min(90, base_h + random.uniform(-1, 1))), 1),
+                t = _state["temperature"]
+                h = _state["humidity"]
+            _set(
+                temperature=round(t + random.uniform(-0.2, 0.2), 1),
+                humidity=round(max(30.0, min(95.0, h + random.uniform(-0.5, 0.5))), 1),
             )
         time.sleep(3)
 
 
 def start_dht_thread():
-    t = threading.Thread(target=_dht_loop, daemon=True)
+    t = threading.Thread(target=_dht_worker, daemon=True, name="DHTThread")
     t.start()
-    print("🌡️  DHT-11 polling thread started.")
+    print("🌡️  DHT-11 polling thread started (every 3 s)")
+
+
+# ── MC-38 door state helper (used by hardware_trap.py) ───────────────────────
+def read_door_pin():
+    """
+    Returns True if door is OPEN (pin HIGH), False if CLOSED (pin LOW).
+    In simulation mode always returns False.
+    """
+    if RUNNING_ON_PI:
+        return bool(GPIO.input(DOOR_SENSOR_PIN))
+    return False
+
+
+def cleanup():
+    """Call on exit to release GPIO resources."""
+    if RUNNING_ON_PI:
+        GPIO.output(BUZZER_PIN,  GPIO.LOW)
+        GPIO.output(RED_LED_PIN, GPIO.LOW)
+        GPIO.cleanup()
+        print("GPIO cleaned up.")
