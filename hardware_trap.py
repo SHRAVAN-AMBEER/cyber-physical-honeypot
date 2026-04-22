@@ -14,13 +14,13 @@ Run:  python3 hardware_trap.py
 import time
 import signal
 import sys
+import threading
 
 import sensor_hub
 from sensor_hub import (
     RUNNING_ON_PI,
     get_sensor_data,
     get_door_button,
-    trigger_alarm_async,
     cleanup,
 )
 from decoy_alert import send_telegram_alert
@@ -35,6 +35,12 @@ time.sleep(2)
 
 # ── Door-open handler ─────────────────────────────────────────────────────────
 def handle_door_open():
+    # ⚡ STEP 1: Turn on buzzer + LED IMMEDIATELY — no threads, no delay
+    if RUNNING_ON_PI and sensor_hub._buzzer and sensor_hub._led:
+        sensor_hub._buzzer.on()
+        sensor_hub._led.on()
+        print("🔴 BUZZER ON | LED ON")
+
     data     = get_sensor_data()
     time_now = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -44,20 +50,29 @@ def handle_door_open():
     print(f"  Humidity : {data['humidity']} %")
     print(f"{'='*52}\n")
 
-    # Fire buzzer + LED immediately (non-blocking)
-    trigger_alarm_async()
+    # ⚡ STEP 2: Send Telegram in background — network delay won't affect alarm
+    def _send_alert():
+        alert_msg = (
+            f"🚨 PHYSICAL BREACH DETECTED 🚨\n"
+            f"Decoy Data Center door was OPENED!\n\n"
+            f"🕐 Time     : {time_now}\n"
+            f"🌡️  Temp     : {data['temperature']} °C\n"
+            f"💧 Humidity : {data['humidity']} %\n\n"
+            f"🔊 Buzzer ON  |  🔴 Red LED ON"
+        )
+        send_telegram_alert(alert_msg)
+    threading.Thread(target=_send_alert, daemon=True).start()
 
-    # Send Telegram alert
-    alert_msg = (
-        f"🚨 PHYSICAL BREACH DETECTED 🚨\n"
-        f"Decoy Data Center door was OPENED!\n\n"
-        f"🕐 Time     : {time_now}\n"
-        f"🌡️  Temp     : {data['temperature']} °C\n"
-        f"💧 Humidity : {data['humidity']} %\n\n"
-        f"🔊 Buzzer ON  |  🔴 Red LED ON\n"
-        f"Auto-clears in 10 seconds."
-    )
-    send_telegram_alert(alert_msg)
+    # ⚡ STEP 3: Auto-off timer — turns buzzer+LED off after 10 seconds
+    def _auto_off():
+        time.sleep(10)
+        if RUNNING_ON_PI and sensor_hub._buzzer and sensor_hub._led:
+            sensor_hub._buzzer.off()
+            sensor_hub._led.off()
+            print("🟢 ALARM OFF — Buzzer OFF | LED OFF")
+        sensor_hub._set(alarm_active=False)
+    threading.Thread(target=_auto_off, daemon=True).start()
+    sensor_hub._set(alarm_active=True)
 
 
 # ── Startup self-test: 1 s blink to confirm wiring ───────────────────────────
