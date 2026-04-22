@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DataCore NOC — Infrastructure Monitor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#070b14;--bg2:#0d1221;--bg3:#111827;
+  --border:rgba(0,200,255,0.12);--border2:rgba(0,200,255,0.25);
+  --cyan:#00c8ff;--green:#00ff87;--red:#ff4757;--yellow:#ffa502;--orange:#ff6b35;
+  --text:#c9e0ef;--muted:#4a6a80;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+.scanline{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,200,255,0.01) 2px,rgba(0,200,255,0.01) 4px);pointer-events:none;}
+
+/* ── Top Bar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:rgba(13,18,33,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,#0066ff,var(--cyan));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 16px rgba(0,200,255,0.35);}
+.brand-name{font-size:16px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.brand-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.sys-badge{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;}
+.badge-green{background:rgba(0,255,135,0.1);color:var(--green);border:1px solid rgba(0,255,135,0.25);}
+.badge-red{background:rgba(255,71,87,0.1);color:var(--red);border:1px solid rgba(255,71,87,0.25);}
+.badge-yellow{background:rgba(255,165,2,0.12);color:var(--yellow);border:1px solid rgba(255,165,2,0.3);}
+.dot{width:7px;height:7px;border-radius:50%;}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 1.4s infinite;}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red);animation:blink .6s infinite;}
+.dot-yellow{background:var(--yellow);}
+.clock{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);letter-spacing:1px;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── Layout ── */
+.main{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;grid-template-rows:auto;gap:18px;}
+
+/* ── Cards ── */
+.card{background:rgba(17,24,39,0.7);border:1px solid var(--border);border-radius:14px;padding:20px;backdrop-filter:blur(12px);transition:border-color .2s;}
+.card:hover{border-color:var(--border2);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);}
+.card-icon{font-size:16px;}
+
+/* ── Stat Cards ── */
+.stat-val{font-size:42px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1;letter-spacing:-1px;}
+.stat-unit{font-size:18px;font-weight:400;color:var(--muted);}
+.stat-label{font-size:12px;color:var(--muted);margin-top:6px;}
+.stat-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:12px;overflow:hidden;}
+.stat-bar-fill{height:100%;border-radius:2px;transition:width .6s ease;}
+.fill-cyan{background:linear-gradient(90deg,#0066ff,var(--cyan));}
+.fill-green{background:linear-gradient(90deg,#00aa55,var(--green));}
+.fill-yellow{background:linear-gradient(90deg,#cc8800,var(--yellow));}
+.fill-red{background:linear-gradient(90deg,#cc0022,var(--red));}
+
+.temp-val{color:var(--cyan);}
+.hum-val{color:var(--green);}
+
+/* ── Span helpers ── */
+.span2{grid-column:span 2;}
+.span3{grid-column:span 3;}
+.span4{grid-column:span 4;}
+
+/* ── Server Rack ── */
+.rack{display:flex;flex-direction:column;gap:8px;}
+.rack-unit{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;font-size:12px;transition:all .2s;}
+.rack-unit:hover{border-color:var(--border2);background:rgba(0,200,255,0.04);}
+.rack-lights{display:flex;gap:5px;}
+.rled{width:8px;height:8px;border-radius:50%;}
+.rled-g{background:var(--green);box-shadow:0 0 5px var(--green);animation:blink 2s infinite;}
+.rled-y{background:var(--yellow);}
+.rled-off{background:#1a2a3a;}
+.rack-name{flex:1;font-weight:600;color:#ddd;font-family:'JetBrains Mono',monospace;font-size:11px;}
+.rack-status{font-size:10px;color:var(--green);font-weight:600;}
+.rack-temp{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+/* ── Gauge ── */
+.gauge-wrap{display:flex;justify-content:center;padding:10px 0;}
+.gauge-svg{overflow:visible;}
+
+/* ── Network chart ── */
+.netchart{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px;}
+.netbar{flex:1;background:linear-gradient(0deg,rgba(0,100,255,0.5),rgba(0,200,255,0.8));border-radius:3px 3px 0 0;transition:height .4s ease;min-height:4px;}
+
+/* ── Events table ── */
+.events-table{width:100%;border-collapse:collapse;font-size:12px;}
+.events-table th{text-align:left;color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:8px 10px;border-bottom:1px solid var(--border);}
+.events-table td{padding:9px 10px;border-bottom:1px solid rgba(0,200,255,0.06);font-family:'JetBrains Mono',monospace;font-size:11px;}
+.events-table tr:hover td{background:rgba(0,200,255,0.03);}
+.sev-critical{color:var(--red);font-weight:700;}
+.sev-warning{color:var(--yellow);font-weight:600;}
+.sev-info{color:var(--cyan);}
+.sev-ok{color:var(--green);}
+
+/* ── Alarm overlay ── */
+#alarm-overlay{display:none;position:fixed;inset:0;background:rgba(255,0,0,0.06);border:3px solid var(--red);z-index:9999;pointer-events:none;animation:alarm-pulse .5s infinite alternate;}
+#alarm-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:var(--red);color:#fff;text-align:center;padding:10px;font-weight:700;font-size:14px;letter-spacing:1px;}
+@keyframes alarm-pulse{from{background:rgba(255,0,0,0.04);}to{background:rgba(255,0,0,0.14);}}
+
+/* ── Action buttons ── */
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.action-btn{padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.action-btn:hover{background:rgba(255,71,87,0.12);border-color:rgba(255,71,87,0.4);color:var(--red);transform:translateY(-1px);}
+.action-btn-danger{border-color:rgba(255,71,87,0.3);color:var(--red);}
+
+/* ── Uptime bar ── */
+.uptime-bars{display:flex;gap:3px;margin-top:10px;}
+.ubar{flex:1;height:28px;border-radius:4px;background:rgba(0,255,135,0.15);border:1px solid rgba(0,255,135,0.2);transition:all .2s;}
+.ubar:hover{background:rgba(0,255,135,0.3);}
+.ubar-down{background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.2);}
+
+/* ── Footer ── */
+.footer{grid-column:span 4;text-align:center;color:var(--muted);font-size:11px;padding:10px 0 4px;font-family:'JetBrains Mono',monospace;}
+
+/* ── Responsive ── */
+@media(max-width:900px){.main{grid-template-columns:1fr 1fr;}.span3,.span4{grid-column:span 2;}.footer{grid-column:span 2;}}
+@media(max-width:550px){.main{grid-template-columns:1fr;}.span2,.span3,.span4{grid-column:span 1;}.footer{grid-column:span 1;}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div id="alarm-banner">🚨 SECURITY ALERT — INTRUSION DETECTED — ALARM ACTIVE 🚨</div>
+<div id="alarm-overlay"></div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">🏢</div>
+    <div>
+      <div class="brand-name">DataCore NOC</div>
+      <div class="brand-sub">Network Operations Center v4.2.1</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="sys-badge badge-green"><span class="dot dot-green"></span>ALL SYSTEMS</span>
+    <span class="sys-badge badge-yellow"><span class="dot dot-yellow"></span>RESTRICTED</span>
+    <span id="alarm-badge" class="sys-badge badge-red" style="display:none"><span class="dot dot-red"></span>ALARM</span>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="main">
+
+  <!-- Temperature -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🌡️ Temperature</span>
+      <span class="card-icon" style="font-size:11px;color:var(--muted)">DHT-11</span>
+    </div>
+    <div class="stat-val temp-val"><span id="temp-val">--</span><span class="stat-unit">°C</span></div>
+    <div class="stat-label">Ambient Room Temperature</div>
+    <div class="stat-bar"><div class="stat-bar-fill fill-cyan" id="temp-bar" style="width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px"><span>0°C</span><span>Safe: 18–27°C</span><span>50°C</span></div>
+  </div>
+
+  <!-- Humidity -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">💧 Humidity</span>
+      <span class="card-icon" style="font-size:11px;color:var(--muted)">DHT-11</span>
+    </div>
+    <div class="stat-val hum-val"><span id="hum-val">--</span><span class="stat-unit">%</span></div>
+    <div class="stat-label">Relative Humidity</div>
+    <div class="stat-bar"><div class="stat-bar-fill fill-green" id="hum-bar" style="width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px"><span>0%</span><span>Optimal: 40–60%</span><span>100%</span></div>
+  </div>
+
+  <!-- Power -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">⚡ Power</span></div>
+    <div class="stat-val" style="color:var(--yellow)">4.2<span class="stat-unit">kW</span></div>
+    <div class="stat-label">Total Rack Power Draw</div>
+    <div class="stat-bar"><div class="stat-bar-fill fill-yellow" style="width:62%"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px"><span>0 kW</span><span>Cap: 6.8 kW</span></div>
+  </div>
+
+  <!-- Uptime -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">⏱ Uptime</span></div>
+    <div class="stat-val" style="color:var(--green);font-size:32px" id="uptime-val">99.97<span class="stat-unit" style="font-size:16px">%</span></div>
+    <div class="stat-label">30-Day SLA</div>
+    <div class="uptime-bars" id="uptime-bars"></div>
+  </div>
+
+  <!-- Server Rack Status -->
+  <div class="card span2">
+    <div class="card-header"><span class="card-title">🖥 Server Rack Status</span><span style="font-size:10px;color:var(--green)">● 7/8 ONLINE</span></div>
+    <div class="rack" id="rack-list">
+      <div class="rack-unit"><div class="rack-lights"><div class="rled rled-g"></div><div class="rled rled-y"></div><div class="rled rled-off"></div></div><span class="rack-name">SRV-CORE-01</span><span class="rack-status">ONLINE</span><span class="rack-temp">28.4°C · 74% CPU</span></div>
+      <div class="rack-unit"><div class="rack-lights"><div class="rled rled-g"></div><div class="rled rled-off"></div><div class="rled rled-off"></div></div><span class="rack-name">SRV-CORE-02</span><span class="rack-status">ONLINE</span><span class="rack-temp">26.1°C · 52% CPU</span></div>
+      <div class="rack-unit"><div class="rack-lights"><div class="rled rled-g"></div><div class="rled rled-g"></div><div class="rled rled-off"></div></div><span class="rack-name">SRV-DB-01</span><span class="rack-status">ONLINE</span><span class="rack-temp">31.2°C · 88% CPU</span></div>
+      <div class="rack-unit"><div class="rack-lights"><div class="rled rled-g"></div><div class="rled rled-off"></div><div class="rled rled-off"></div></div><span class="rack-name">SRV-BACKUP-01</span><span class="rack-status">ONLINE</span><span class="rack-temp">24.8°C · 18% CPU</span></div>
+      <div class="rack-unit" style="border-color:rgba(255,71,87,0.3)"><div class="rack-lights"><div class="rled rled-off"></div><div class="rled rled-off"></div><div class="rled rled-off"></div></div><span class="rack-name">SRV-EDGE-03</span><span class="rack-status" style="color:var(--red)">OFFLINE</span><span class="rack-temp">—</span></div>
+    </div>
+  </div>
+
+  <!-- Network Traffic -->
+  <div class="card span2">
+    <div class="card-header"><span class="card-title">📡 Network Traffic</span><span style="font-size:11px;color:var(--cyan);font-family:'JetBrains Mono',monospace" id="net-val">0 Mbps</span></div>
+    <div style="display:flex;gap:20px;font-size:12px;margin-bottom:8px">
+      <span>↑ <span id="net-up" style="color:var(--green)">0</span> Mbps</span>
+      <span>↓ <span id="net-down" style="color:var(--cyan)">0</span> Mbps</span>
+      <span style="color:var(--muted)">Latency: <span id="net-lat">0</span>ms</span>
+    </div>
+    <div class="netchart" id="netchart"></div>
+  </div>
+
+  <!-- Admin Actions (THE TRAP) -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">⚙️ Admin Controls</span><span style="font-size:10px;color:var(--red);font-weight:700">PRIVILEGED</span></div>
+    <div class="action-grid">
+      <button class="action-btn action-btn-danger" onclick="doAction('emergency_shutdown')">🔴 E-Shutdown</button>
+      <button class="action-btn" onclick="doAction('reboot_all')">🔄 Reboot All</button>
+      <button class="action-btn" onclick="doAction('firewall_disable')">🛡️ FW Toggle</button>
+      <button class="action-btn" onclick="doAction('dump_logs')">📋 Dump Logs</button>
+    </div>
+    <div id="action-status" style="margin-top:12px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-height:18px;"></div>
+  </div>
+
+  <!-- Security Events -->
+  <div class="card span3">
+    <div class="card-header"><span class="card-title">🔐 Security Events</span><span id="event-count" style="font-size:11px;color:var(--muted)">0 events</span></div>
+    <div style="overflow:auto;max-height:180px;">
+      <table class="events-table">
+        <thead><tr><th>Time</th><th>Source</th><th>Detail</th><th>Severity</th></tr></thead>
+        <tbody id="events-body"><tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No events yet…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">DataCore NOC v4.2.1 · ISO 27001 · TLS 1.3 · © 2025 DataCore Systems Inc.</div>
+</div>
+
+<script>
+// ── Clock ─────────────────────────────────────────────────────────────────
+function updateClock(){
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+}
+setInterval(updateClock,1000); updateClock();
+
+// ── Uptime bars ───────────────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('uptime-bars');
+  for(let i=0;i<30;i++){
+    const b=document.createElement('div');
+    b.className='ubar'+(Math.random()<.015?' ubar-down':'');
+    b.title=`Day ${30-i}`;
+    c.appendChild(b);
+  }
+})();
+
+// ── Network chart seed ────────────────────────────────────────────────────
+let netBars=[];
+(function(){
+  const c=document.getElementById('netchart');
+  for(let i=0;i<28;i++){
+    const b=document.createElement('div');
+    b.className='netbar';
+    const h=Math.random()*50+6;
+    b.style.height=h+'px';
+    netBars.push(b); c.appendChild(b);
+  }
+})();
+function updateNet(){
+  const up=Math.round(Math.random()*200+80);
+  const dn=Math.round(Math.random()*400+120);
+  const lat=Math.round(Math.random()*8+1);
+  document.getElementById('net-up').textContent=up;
+  document.getElementById('net-down').textContent=dn;
+  document.getElementById('net-lat').textContent=lat;
+  document.getElementById('net-val').textContent=(up+dn)+' Mbps';
+  netBars.shift();
+  const b=document.createElement('div');
+  b.className='netbar';
+  const h=Math.min(58,((up+dn)/600)*58+4);
+  b.style.height=h+'px';
+  netBars.push(b);
+  document.getElementById('netchart').appendChild(b);
+}
+setInterval(updateNet,2000); updateNet();
+
+// ── Sensor polling ────────────────────────────────────────────────────────
+let alarmActive=false;
+function fetchSensors(){
+  fetch('/api/sensors').then(r=>r.json()).then(d=>{
+    const t=d.temperature; const h=d.humidity;
+    document.getElementById('temp-val').textContent=t.toFixed(1);
+    document.getElementById('hum-val').textContent=h.toFixed(1);
+    document.getElementById('temp-bar').style.width=Math.min(100,(t/50)*100)+'%';
+    document.getElementById('hum-bar').style.width=h+'%';
+    const tb=document.getElementById('temp-bar');
+    if(t>35){tb.className='stat-bar-fill fill-red';}
+    else if(t>28){tb.className='stat-bar-fill fill-yellow';}
+    else{tb.className='stat-bar-fill fill-cyan';}
+    if(d.alarm_active && !alarmActive){triggerAlarmUI();}
+    else if(!d.alarm_active && alarmActive){clearAlarmUI();}
+  }).catch(()=>{});
+}
+setInterval(fetchSensors,3000); fetchSensors();
+
+// ── Events polling ────────────────────────────────────────────────────────
+function fetchEvents(){
+  fetch('/api/events').then(r=>r.json()).then(events=>{
+    const tb=document.getElementById('events-body');
+    document.getElementById('event-count').textContent=events.length+' events';
+    if(!events.length)return;
+    tb.innerHTML=events.slice(0,8).map(e=>`
+      <tr>
+        <td>${e.time}</td>
+        <td>${e.source}</td>
+        <td>${e.detail}</td>
+        <td class="sev-${e.severity.toLowerCase()}">${e.severity}</td>
+      </tr>`).join('');
+  }).catch(()=>{});
+}
+setInterval(fetchEvents,4000); fetchEvents();
+
+// ── Admin action (THE TRAP) ───────────────────────────────────────────────
+function doAction(action){
+  document.getElementById('action-status').textContent='⏳ Executing '+action+'…';
+  fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})})
+    .then(r=>r.json()).then(d=>{
+      document.getElementById('action-status').textContent='⚠️ '+d.message;
+      triggerAlarmUI();
+    }).catch(()=>{});
+}
+
+// ── Alarm UI ──────────────────────────────────────────────────────────────
+function triggerAlarmUI(){
+  alarmActive=true;
+  document.getElementById('alarm-overlay').style.display='block';
+  document.getElementById('alarm-banner').style.display='block';
+  document.getElementById('alarm-badge').style.display='flex';
+}
+function clearAlarmUI(){
+  alarmActive=false;
+  document.getElementById('alarm-overlay').style.display='none';
+  document.getElementById('alarm-banner').style.display='none';
+  document.getElementById('alarm-badge').style.display='none';
+}
+</script>
+</body>
+</html>
