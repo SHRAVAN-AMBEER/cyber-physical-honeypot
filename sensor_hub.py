@@ -20,11 +20,14 @@ import random
 # ── GPIO library detection ────────────────────────────────────────────────────
 try:
     import RPi.GPIO as GPIO
-    import Adafruit_DHT
+    import board
+    import adafruit_dht
+    _dht_device = adafruit_dht.DHT11(board.D4)   # GPIO 4
     RUNNING_ON_PI = True
-    print("✅ RPi.GPIO + Adafruit_DHT loaded — HARDWARE MODE")
-except (ImportError, RuntimeError):
+    print("✅ RPi.GPIO + adafruit_dht loaded — HARDWARE MODE")
+except (ImportError, RuntimeError, NotImplementedError):
     RUNNING_ON_PI = False
+    _dht_device = None
     print("⚠️  GPIO libs not found — running in SIMULATION mode (PC/dev)")
 
 # ── Pin numbers (BCM numbering) ───────────────────────────────────────────────
@@ -118,9 +121,8 @@ def _dht_worker():
     while True:
         if RUNNING_ON_PI:
             try:
-                humidity, temperature = Adafruit_DHT.read_retry(
-                    Adafruit_DHT.DHT11, DHT_DATA_PIN, retries=5
-                )
+                temperature = _dht_device.temperature
+                humidity    = _dht_device.humidity
                 if temperature is not None and humidity is not None:
                     _set(
                         temperature=round(float(temperature), 1),
@@ -129,6 +131,9 @@ def _dht_worker():
                     print(f"🌡️  DHT-11: {temperature:.1f}°C  💧{humidity:.1f}%")
                 else:
                     print("⚠️  DHT-11 read returned None — retrying…")
+            except RuntimeError as e:
+                # DHT sensors occasionally miss reads — safe to ignore
+                print(f"⚠️  DHT-11 miss (normal): {e}")
             except Exception as e:
                 print(f"⚠️  DHT-11 error: {e}")
         else:

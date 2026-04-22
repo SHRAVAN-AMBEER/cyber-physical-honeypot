@@ -1,5 +1,5 @@
 flask
 python-dotenv
 requests
-Adafruit_DHT
+adafruit-circuitpython-dht
 RPi.GPIO
