@@ -1,17 +1,12 @@
 """
 hardware_trap.py — Physical Intrusion Monitor
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Reads the MC-38 Magnetic Reed Switch in real-time using RPi.GPIO edge
-detection.  When the cardboard "data center" door is opened:
-  1. Immediately turns Buzzer ON  (GPIO 18)
-  2. Immediately turns Red LED ON (GPIO 23)
-  3. Sends a Telegram alert with live temp & humidity from DHT-11
-  4. Keeps alarm on for 10 seconds, then auto-clears
+Uses gpiozero Button.when_released for real MC-38 edge detection.
+This works correctly on all Raspberry Pi OS versions including Bookworm.
 
 MC-38 wiring:
-  Wire A → GPIO 14 (BCM)  [Physical Pin 8]
-  Wire B → GND            [Physical Pin 9]
-  (Internal PUD_UP is used — no external resistor needed)
+  Wire A → GPIO 17 (BCM) — Physical Pin 11
+  Wire B → GND           — Physical Pin 9
 
 Run:  python3 hardware_trap.py
 """
@@ -23,39 +18,36 @@ import sys
 import sensor_hub
 from sensor_hub import (
     RUNNING_ON_PI,
-    DOOR_SENSOR_PIN,
-    read_door_pin,
     get_sensor_data,
+    get_door_button,
     trigger_alarm_async,
     cleanup,
 )
 from decoy_alert import send_telegram_alert
 
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  Initialise GPIO and DHT-11 (only this file should call init)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ── Init GPIO and DHT (this is the ONLY process that should do this) ─────────
 sensor_hub.init()
 sensor_hub.start_dht_thread()
 
+# ── Wait 2 s for DHT thread to get first reading ─────────────────────────────
+time.sleep(2)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  Door-open handler (called by GPIO interrupt or simulation)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ── Door-open handler ─────────────────────────────────────────────────────────
 def handle_door_open():
     data     = get_sensor_data()
     time_now = time.strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f"\n{'='*50}")
-    print(f"[{time_now}] ⚠️  DOOR OPENED — PHYSICAL BREACH!")
-    print(f"  Temp    : {data['temperature']} °C")
-    print(f"  Humidity: {data['humidity']} %")
-    print(f"{'='*50}\n")
+    print(f"\n{'='*52}")
+    print(f"[{time_now}] ⚠️  DOOR OPENED — PHYSICAL BREACH DETECTED!")
+    print(f"  Temp     : {data['temperature']} °C")
+    print(f"  Humidity : {data['humidity']} %")
+    print(f"{'='*52}\n")
 
-    # 1. Fire the physical alarm (buzzer + LED) immediately
+    # Fire buzzer + LED immediately (non-blocking)
     trigger_alarm_async()
 
-    # 2. Send Telegram alert
+    # Send Telegram alert
     alert_msg = (
         f"🚨 PHYSICAL BREACH DETECTED 🚨\n"
         f"Decoy Data Center door was OPENED!\n\n"
@@ -63,86 +55,71 @@ def handle_door_open():
         f"🌡️  Temp     : {data['temperature']} °C\n"
         f"💧 Humidity : {data['humidity']} %\n\n"
         f"🔊 Buzzer ON  |  🔴 Red LED ON\n"
-        f"Alarm will auto-clear in 10 seconds."
+        f"Auto-clears in 10 seconds."
     )
     send_telegram_alert(alert_msg)
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  GPIO Edge Detection (real hardware path)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ── Startup self-test: 1 s blink to confirm wiring ───────────────────────────
 if RUNNING_ON_PI:
-    import RPi.GPIO as GPIO
+    print("\n🔧 Self-test: Buzzer + LED ON for 1 second...")
+    if sensor_hub._buzzer and sensor_hub._led:
+        sensor_hub._buzzer.on()
+        sensor_hub._led.on()
+        time.sleep(1)
+        sensor_hub._buzzer.off()
+        sensor_hub._led.off()
+        print("✅ Self-test passed — wiring is correct!\n")
+    else:
+        print("⚠️  Buzzer/LED not initialised — check wiring\n")
 
-    def _door_isr(channel):
-        """
-        Interrupt Service Routine — fires on RISING edge of GPIO 14.
-        MC-38 with PUD_UP:
-          Door CLOSED → pin LOW (magnet holds switch shut)
-          Door OPENED → pin HIGH (magnet removed, switch opens, pull-up wins)
-        Double-check the pin is still HIGH to filter noise.
-        """
-        time.sleep(0.05)                        # 50 ms debounce
-        if GPIO.input(DOOR_SENSOR_PIN) == GPIO.HIGH:
-            handle_door_open()
 
-    # Register interrupt on RISING edge with 300 ms hardware debounce
-    GPIO.add_event_detect(
-        DOOR_SENSOR_PIN,
-        GPIO.RISING,
-        callback=_door_isr,
-        bouncetime=300,
-    )
+# ── Attach MC-38 door sensor via gpiozero ────────────────────────────────────
+door_button = get_door_button()
 
-    # ── Graceful shutdown on Ctrl+C ──────────────────────────────────────────
+if RUNNING_ON_PI and door_button:
+    # MC-38 NC switch: door open = circuit breaks = button "released"
+    door_button.when_released = handle_door_open
+
+    print("🛡️  Physical Security ARMED")
+    print(f"    MC-38  : BCM17  (Physical Pin 11)")
+    print(f"    Buzzer : BCM18  (Physical Pin 12)")
+    print(f"    Red LED: BCM23  (Physical Pin 16)")
+    print("    Waiting for door event... (Ctrl+C to stop)\n")
+
+    # ── Graceful shutdown ─────────────────────────────────────────────────────
     def _shutdown(sig, frame):
-        print("\n🛑 Shutting down — cleaning up GPIO…")
+        print("\n🛑 Shutting down...")
+        door_button.close()
         cleanup()
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, _shutdown)
+    signal.signal(signal.SIGINT,  _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
-    # ── Startup self-test: blink LED + short beep to confirm wiring ──────────
-    print("\n🔧 Self-test: LED and Buzzer will fire for 1 second…")
-    GPIO.output(sensor_hub.BUZZER_PIN,  GPIO.HIGH)
-    GPIO.output(sensor_hub.RED_LED_PIN, GPIO.HIGH)
-    time.sleep(1)
-    GPIO.output(sensor_hub.BUZZER_PIN,  GPIO.LOW)
-    GPIO.output(sensor_hub.RED_LED_PIN, GPIO.LOW)
-    print("✅ Self-test done — if you heard the buzzer and saw the LED, wiring is correct.\n")
-
-    # ── Live door status loop ────────────────────────────────────────────────
-    print("🛡️  Physical Security ARMED")
-    print(f"    MC-38  : BCM GPIO {DOOR_SENSOR_PIN}  (Physical Pin 8)")
-    print(f"    Buzzer : BCM GPIO {sensor_hub.BUZZER_PIN}  (Physical Pin 12)")
-    print(f"    Red LED: BCM GPIO {sensor_hub.RED_LED_PIN}  (Physical Pin 16)")
-    print("    Waiting for door event… (Ctrl+C to stop)\n")
-
+    # ── Live status loop ──────────────────────────────────────────────────────
     try:
         while True:
-            # Print live door status every 5 s so you can see the pin value
-            door_state = "OPEN ⚠️" if read_door_pin() else "CLOSED ✅"
-            data = get_sensor_data()
-            print(f"[{time.strftime('%H:%M:%S')}] "
-                  f"Door: {door_state:<12} | "
+            data       = get_sensor_data()
+            door_state = "OPEN ⚠️ " if not door_button.is_pressed else "CLOSED ✅"
+            print(f"[{time.strftime('%H:%M:%S')}]  "
+                  f"Door: {door_state:<13} | "
                   f"Temp: {data['temperature']}°C | "
                   f"Humidity: {data['humidity']}%")
             time.sleep(5)
     except KeyboardInterrupt:
         _shutdown(None, None)
 
+elif RUNNING_ON_PI and not door_button:
+    print("❌ Could not initialise door sensor. Check wiring on GPIO 17 (Pin 11).")
+    sys.exit(1)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  Simulation mode (running on Windows/PC — no real GPIO)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 else:
-    print("\n🛡️  [SIMULATION MODE] Physical Security Armed.")
-    print("    Press ENTER to simulate a door-open event.")
-    print("    Press Ctrl+C to quit.\n")
+    # ── Simulation mode (PC / no GPIO) ───────────────────────────────────────
+    print("🛡️  [SIMULATION] Press ENTER to trigger door-open. Ctrl+C to quit.\n")
     try:
         while True:
-            input(">>> Press ENTER to trigger door-open event: ")
+            input(">>> Press ENTER to simulate door open: ")
             handle_door_open()
     except KeyboardInterrupt:
-        print("\nMonitor stopped.")
+        print("\nStopped.")
