@@ -114,14 +114,14 @@ def emergency():
         print(f"[TRAP] Emergency override from {ip} — {user} / {pwd}")
         return "<h1>Error 503: Subsystem Unreachable. Connection Terminated.</h1>", 503
 
-    # GET — someone just visiting the system status page → also trigger alarm
+    # GET — log the visit + Telegram only, no buzzer/LED
     ip  = request.remote_addr
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _alert_and_alarm(
-        f"⚠️  SYSTEM STATUS PAGE ACCESSED\n\nSomeone is viewing the Emergency Climate Control page!\n\n🕐 Time : {now}\n🌍 IP   : {ip}\n\n🔊 Buzzer ON | 🔴 LED ON",
-        ip, "System Status page accessed", "CRITICAL", alarm=True
+        f"⚠️  SYSTEM STATUS PAGE ACCESSED\n\nSomeone is viewing the Emergency Climate Control page!\n\n🕐 Time : {now}\n🌍 IP   : {ip}",
+        ip, "System Status page accessed", "WARNING", alarm=False
     )
-    print(f"[VISIT] {ip} → Emergency/System Status page — ALARM triggered")
+    print(f"[VISIT] {ip} → Emergency/System Status page")
     return render_template('emergency.html')
 
 
