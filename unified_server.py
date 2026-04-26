@@ -108,13 +108,20 @@ def emergency():
         pwd  = request.form.get('password', '')
         now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         _alert_and_alarm(
-            f"🎣 SOCIAL ENGINEERING TRAP SPRUNG 🎣\n\nAttacker panicked at fake humidity warning!\n\n🕐 Time     : {now}\n🌍 IP       : {ip}\n👤 Username : {user}\n🔑 Password : {pwd}",
-            ip, f"Emergency override attempt: {user}", "CRITICAL"
+            f"🎣 MANUAL OVERRIDE ATTEMPTED 🎣\n\nAttacker submitted emergency override credentials!\n\n🕐 Time     : {now}\n🌍 IP       : {ip}\n👤 Username : {user}\n🔑 Password : {pwd}\n\n🔊 Buzzer ON | 🔴 LED ON",
+            ip, f"Emergency override attempt: {user}", "CRITICAL", alarm=True
         )
         print(f"[TRAP] Emergency override from {ip} — {user} / {pwd}")
         return "<h1>Error 503: Subsystem Unreachable. Connection Terminated.</h1>", 503
 
-    print(f"[VISIT] {request.remote_addr} → Emergency page")
+    # GET — someone just visiting the system status page → also trigger alarm
+    ip  = request.remote_addr
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _alert_and_alarm(
+        f"⚠️  SYSTEM STATUS PAGE ACCESSED\n\nSomeone is viewing the Emergency Climate Control page!\n\n🕐 Time : {now}\n🌍 IP   : {ip}\n\n🔊 Buzzer ON | 🔴 LED ON",
+        ip, "System Status page accessed", "CRITICAL", alarm=True
+    )
+    print(f"[VISIT] {ip} → Emergency/System Status page — ALARM triggered")
     return render_template('emergency.html')
 
 
