@@ -115,9 +115,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ── Footer ── */
 .footer{grid-column:span 4;text-align:center;color:var(--muted);font-size:11px;padding:10px 0 4px;font-family:'JetBrains Mono',monospace;}
 
+/* ── Navbar links ── */
+.nav-links{display:flex;gap:4px;margin-left:24px;}
+.nav-link{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;color:var(--muted);transition:all .2s;letter-spacing:.5px;}
+.nav-link:hover{background:rgba(0,200,255,0.08);color:var(--cyan);}
+.nav-link.active{background:rgba(0,200,255,0.1);color:var(--cyan);border:1px solid rgba(0,200,255,0.2);}
 /* ── Responsive ── */
 @media(max-width:900px){.main{grid-template-columns:1fr 1fr;}.span3,.span4{grid-column:span 2;}.footer{grid-column:span 2;}}
-@media(max-width:550px){.main{grid-template-columns:1fr;}.span2,.span3,.span4{grid-column:span 1;}.footer{grid-column:span 1;}}
+@media(max-width:550px){.main{grid-template-columns:1fr;}.span2,.span3,.span4{grid-column:span 1;}.footer{grid-column:span 1;}.nav-links{display:none;}}
 </style>
 </head>
 <body>
@@ -129,10 +134,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <!-- Top Bar -->
 <div class="topbar">
   <div class="brand">
-    <div class="brand-icon">🏢</div>
-    <div>
-      <div class="brand-name">DataCore NOC</div>
-      <div class="brand-sub">Network Operations Center v4.2.1</div>
+    <a href="/" style="display:flex;align-items:center;gap:12px;text-decoration:none">
+      <div class="brand-icon">🏢</div>
+      <div>
+        <div class="brand-name">DataCore NOC</div>
+        <div class="brand-sub">Network Operations Center v4.2.1</div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link active" href="/">Dashboard</a>
+      <a class="nav-link" href="/login">Secure Login</a>
+      <a class="nav-link" href="/emergency">System Status</a>
     </div>
   </div>
   <div class="topbar-right">
