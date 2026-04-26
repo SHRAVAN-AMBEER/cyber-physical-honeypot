@@ -222,20 +222,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="netchart" id="netchart"></div>
   </div>
 
-  <!-- Admin Actions (THE TRAP) -->
-  <div class="card">
-    <div class="card-header"><span class="card-title">⚙️ Admin Controls</span><span style="font-size:10px;color:var(--red);font-weight:700">PRIVILEGED</span></div>
-    <div class="action-grid">
-      <button class="action-btn action-btn-danger" onclick="doAction('emergency_shutdown')">🔴 E-Shutdown</button>
-      <button class="action-btn" onclick="doAction('reboot_all')">🔄 Reboot All</button>
-      <button class="action-btn" onclick="doAction('firewall_disable')">🛡️ FW Toggle</button>
-      <button class="action-btn" onclick="doAction('dump_logs')">📋 Dump Logs</button>
-    </div>
-    <div id="action-status" style="margin-top:12px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-height:18px;"></div>
-  </div>
 
   <!-- Security Events -->
-  <div class="card span3">
+  <div class="card span4">
     <div class="card-header"><span class="card-title">🔐 Security Events</span><span id="event-count" style="font-size:11px;color:var(--muted)">0 events</span></div>
     <div style="overflow:auto;max-height:180px;">
       <table class="events-table">
