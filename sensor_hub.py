@@ -34,11 +34,12 @@ RED_LED_PIN     = 23
 # ── In-process state (hardware_trap only) ─────────────────────────────────────
 _lock  = threading.Lock()
 _state = {
-    "temperature"  : 24.5,
-    "humidity"     : 58.0,
-    "door_open"    : False,
-    "alarm_active" : False,
-    "last_updated" : time.strftime("%Y-%m-%d %H:%M:%S"),
+    "temperature"    : 24.5,
+    "humidity"       : 58.0,
+    "door_open"      : False,
+    "alarm_active"   : False,
+    "alarm_requested": False,   # set by server/dashboard, read by hardware_trap
+    "last_updated"   : time.strftime("%Y-%m-%d %H:%M:%S"),
 }
 
 # ── gpiozero device handles (set inside init()) ───────────────────────────────
@@ -153,6 +154,53 @@ def _alarm_worker():
 
 def trigger_alarm_async():
     threading.Thread(target=_alarm_worker, daemon=True, name="AlarmThread").start()
+
+
+def request_alarm():
+    """
+    Called by decoy_server / decoy_dashboard (no GPIO access).
+    Writes alarm_requested=True to the shared JSON file.
+    hardware_trap.py polls this and fires the real buzzer + LED.
+    """
+    try:
+        # Read current state from file, set flag, write back
+        data = {}
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE) as f:
+                data = json.load(f)
+        data["alarm_requested"] = True
+        with open(STATE_FILE, "w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"⚠️  request_alarm write error: {e}")
+
+
+def start_alarm_watcher():
+    """
+    Run in hardware_trap.py only.
+    Polls the shared JSON every 0.5s — when alarm_requested=True,
+    fires the physical buzzer + LED and resets the flag.
+    """
+    def _watch():
+        while True:
+            try:
+                if os.path.exists(STATE_FILE):
+                    with open(STATE_FILE) as f:
+                        data = json.load(f)
+                    if data.get("alarm_requested", False):
+                        print("🌐 Remote alarm request received — firing buzzer + LED")
+                        # Reset flag immediately so it doesn't re-trigger
+                        data["alarm_requested"] = False
+                        with open(STATE_FILE, "w") as f:
+                            json.dump(data, f)
+                        # Fire the physical alarm
+                        trigger_alarm_async()
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+    threading.Thread(target=_watch, daemon=True, name="AlarmWatcher").start()
+    print("👁️  Alarm watcher started (polling every 0.5s)")
 
 
 # ── DHT-11 polling (hardware_trap process only) ───────────────────────────────

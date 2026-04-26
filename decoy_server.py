@@ -13,7 +13,7 @@ import datetime
 from flask import Flask, request, render_template_string, jsonify
 
 from decoy_alert import send_telegram_alert
-from sensor_hub import trigger_alarm_async, get_sensor_data
+from sensor_hub import request_alarm, get_sensor_data
 
 app = Flask(__name__)
 # NOTE: GPIO init is owned by hardware_trap.py.
@@ -163,7 +163,7 @@ def honeypot_login():
             f"Buzzer + Red LED activated."
         )
         send_telegram_alert(alert_msg)
-        trigger_alarm_async()
+        request_alarm()   # signals hardware_trap to fire real buzzer + LED
         print(f"[HONEYPOT] Intrusion from {hacker_ip} logged. Alarm triggered.")
 
         return "<h1>Error 503: Database Connection Timeout. Please try again later.</h1>", 503

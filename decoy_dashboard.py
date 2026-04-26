@@ -18,7 +18,7 @@ import time
 from flask import Flask, render_template, jsonify, request
 
 from decoy_alert import send_telegram_alert
-from sensor_hub import trigger_alarm_async, get_sensor_data
+from sensor_hub import request_alarm, get_sensor_data
 
 app = Flask(__name__)
 # NOTE: GPIO init is owned by hardware_trap.py.
@@ -87,7 +87,7 @@ def api_action():
         f"Buzzer + Red LED activated."
     )
     send_telegram_alert(alert_msg)
-    trigger_alarm_async()
+    request_alarm()   # signals hardware_trap to fire real buzzer + LED
     log_event(visitor_ip, f"Admin action attempted: {action}", "CRITICAL")
     print(f"[ALARM] Admin action '{action}' from {visitor_ip}. Alarm triggered!")
 

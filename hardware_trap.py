@@ -22,12 +22,14 @@ from sensor_hub import (
     get_sensor_data,
     get_door_button,
     cleanup,
+    start_alarm_watcher,
 )
 from decoy_alert import send_telegram_alert
 
 # ── Init GPIO and DHT (this is the ONLY process that should do this) ─────────
 sensor_hub.init()
 sensor_hub.start_dht_thread()
+start_alarm_watcher()   # listens for alarm requests from web processes
 
 # ── Wait 2 s for DHT thread to get first reading ─────────────────────────────
 time.sleep(2)
