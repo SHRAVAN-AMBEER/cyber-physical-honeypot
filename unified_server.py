@@ -18,7 +18,7 @@ import datetime
 import json
 import threading
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from decoy_alert import send_telegram_alert
 from sensor_hub import request_alarm, get_sensor_data
 
@@ -64,23 +64,39 @@ def dashboard():
     return render_template('dashboard.html')
 
 
-# ── Login honeypot ────────────────────────────────────────────────────────────
+# ── Login honeypot ───────────────────────────────────────────────────────────────────
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         ip   = request.remote_addr
-        user = request.form.get('username', '')
+        user = request.form.get('username', 'admin')
         pwd  = request.form.get('password', '')
         now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Log credentials + send Telegram
         _alert_and_alarm(
-            f"🚨 LOGIN TRAP SPRUNG 🚨\n\n🕐 Time    : {now}\n🌍 IP      : {ip}\n👤 Username: {user}\n🔑 Password: {pwd}\n\nBuzzer + LED activated.",
-            ip, f"Login attempt: {user}", "CRITICAL", alarm=True
+            f"🚨 LOGIN CREDENTIALS CAPTURED 🚨\n\n🕐 Time    : {now}\n🌍 IP      : {ip}\n👤 Username: {user}\n🔑 Password: {pwd}\n\nAttacker redirected to Admin Panel trap.",
+            ip, f"Login credentials captured: {user}", "CRITICAL", alarm=False
         )
-        print(f"[TRAP] Login from {ip} — {user} / {pwd}")
-        return "<h1>Error 503: Database Connection Timeout. Please try again later.</h1>", 503
+        print(f"[TRAP] Login from {ip} — {user} / {pwd} → redirecting to /admin")
+        # Accept credentials and redirect to admin panel trap
+        return redirect(url_for('admin_panel', user=user))
 
     print(f"[VISIT] {request.remote_addr} → Login page")
     return render_template('login.html')
+
+
+# ── Admin panel (the real trap) ────────────────────────────────────────────────────
+@app.route('/admin')
+def admin_panel():
+    ip   = request.remote_addr
+    user = request.args.get('user', 'Administrator')
+    now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _alert_and_alarm(
+        f"🕓 ATTACKER REACHED ADMIN PANEL 🕓\n\n🕐 Time : {now}\n🌍 IP   : {ip}\n👤 User : {user}\n\nWaiting for them to press a control button...",
+        ip, f"Admin panel accessed by {user}", "CRITICAL"
+    )
+    print(f"[ADMIN] {ip} ({user}) reached the admin panel trap")
+    return render_template('admin.html')
 
 
 # ── Social engineering emergency page ─────────────────────────────────────────
@@ -117,19 +133,21 @@ def api_events():
 @app.route('/api/action', methods=['POST'])
 def api_action():
     ip     = request.remote_addr
-    action = request.json.get('action', 'unknown') if request.is_json else 'unknown'
+    data   = request.json if request.is_json else {}
+    action = data.get('action', 'unknown')
+    user   = data.get('user', 'unknown')
     now    = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _alert_and_alarm(
-        f"🚨 ADMIN ACTION ATTEMPT 🚨\n\n🕐 Time  : {now}\n🌍 IP    : {ip}\n⚙️  Action: {action}\n\nBuzzer + LED activated.",
-        ip, f"Admin action: {action}", "CRITICAL", alarm=True
+        f"🚨 ADMIN ACTION TRIGGERED 🚨\n\n🕐 Time  : {now}\n🌍 IP    : {ip}\n👤 User  : {user}\n⚙️  Action: {action}\n\n🔊 Buzzer ON | 🔴 LED ON",
+        ip, f"Admin action by {user}: {action}", "CRITICAL", alarm=True
     )
-    print(f"[ALARM] Admin action '{action}' from {ip}")
+    print(f"[ALARM] 🚨 Admin action '{action}' by '{user}' from {ip}")
     return jsonify({"status": "executing", "message": "Command queued..."})
 
 
 if __name__ == '__main__':
     print("🖥️  Starting Unified Honeypot Server on port 8080...")
     print("    http://<pi-ip>:8080/           → NOC Dashboard")
-    print("    http://<pi-ip>:8080/login      → Login Trap")
+    print("    http://<pi-ip>:8080/login      → Login Trap → Admin Panel")
     print("    http://<pi-ip>:8080/emergency  → Social Engineering Trap\n")
     app.run(host='0.0.0.0', port=8080, debug=False)

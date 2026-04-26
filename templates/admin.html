@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DataCore Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#070b14;--bg2:#0d1221;--bg3:#111827;--border:rgba(0,200,255,0.12);--border2:rgba(0,200,255,0.3);--cyan:#00c8ff;--green:#00ff87;--red:#ff4757;--yellow:#ffa502;--text:#c9e0ef;--muted:#4a6a80;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+
+/* ── Navbar ── */
+.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 28px;background:rgba(13,18,33,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);position:sticky;top:0;z-index:100;}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-icon{width:34px;height:34px;background:linear-gradient(135deg,#0066ff,var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.nav-name{font-size:15px;font-weight:700;color:#fff;}
+.nav-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-user{display:flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(0,200,255,0.06);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--cyan);}
+.nav-user-icon{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0066ff,var(--cyan));display:flex;align-items:center;justify-content:center;font-size:11px;}
+.nav-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(255,165,2,0.12);color:var(--yellow);border:1px solid rgba(255,165,2,0.3);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;color:var(--muted);transition:all .2s;}
+.nav-link:hover{background:rgba(0,200,255,0.08);color:var(--cyan);}
+.nav-link.active{background:rgba(0,200,255,0.1);color:var(--cyan);border:1px solid rgba(0,200,255,0.2);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── Alarm overlay ── */
+#alarm-overlay{display:none;position:fixed;inset:0;background:rgba(255,0,0,0.07);border:3px solid var(--red);z-index:9999;pointer-events:none;animation:alarm-pulse .5s infinite alternate;}
+#alarm-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:var(--red);color:#fff;text-align:center;padding:11px;font-weight:700;font-size:13px;letter-spacing:1px;}
+@keyframes alarm-pulse{from{background:rgba(255,0,0,0.04);}to{background:rgba(255,0,0,0.16);}}
+
+/* ── Main ── */
+.main{padding:28px;display:grid;grid-template-columns:260px 1fr;gap:20px;max-width:1200px;margin:0 auto;width:100%;}
+
+/* ── Sidebar ── */
+.sidebar{display:flex;flex-direction:column;gap:14px;}
+.profile-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center;}
+.profile-avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#0066ff,var(--cyan));display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;box-shadow:0 0 20px rgba(0,150,255,0.3);}
+.profile-name{font-size:15px;font-weight:700;color:#e0f4ff;}
+.profile-role{font-size:11px;color:var(--yellow);font-weight:600;letter-spacing:1px;margin-top:3px;}
+.profile-badge{display:inline-block;margin-top:8px;font-size:10px;padding:3px 10px;border-radius:10px;background:rgba(0,255,135,0.1);color:var(--green);border:1px solid rgba(0,255,135,0.25);}
+.divider{height:1px;background:var(--border);margin:4px 0;}
+.sys-info{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.sys-info-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
+.sys-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;}
+.sys-row:last-child{border:none;}
+.sys-row-val{font-family:'JetBrains Mono',monospace;font-size:11px;}
+.val-green{color:var(--green);}
+.val-cyan{color:var(--cyan);}
+.val-yellow{color:var(--yellow);}
+.session-card{background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);border-radius:12px;padding:14px;}
+.session-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.session-val{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--cyan);}
+
+/* ── Content ── */
+.content{display:flex;flex-direction:column;gap:18px;}
+
+/* ── Welcome banner ── */
+.welcome-banner{background:linear-gradient(135deg,rgba(0,102,255,0.15),rgba(0,200,255,0.08));border:1px solid rgba(0,200,255,0.2);border-radius:14px;padding:20px 24px;display:flex;align-items:center;gap:16px;}
+.welcome-icon{font-size:32px;}
+.welcome-title{font-size:17px;font-weight:700;color:#e0f4ff;}
+.welcome-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.access-badge{margin-left:auto;padding:6px 16px;background:rgba(255,165,2,0.12);color:var(--yellow);border:1px solid rgba(255,165,2,0.3);border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;}
+
+/* ── Cards ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;transition:border-color .2s;}
+.card:hover{border-color:var(--border2);}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.card-badge-red{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(255,71,87,0.15);color:var(--red);border:1px solid rgba(255,71,87,0.3);}
+
+/* ── Admin controls grid ── */
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ctrl-btn{padding:16px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;text-align:left;display:flex;flex-direction:column;gap:6px;}
+.ctrl-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3);}
+.ctrl-btn-icon{font-size:20px;}
+.ctrl-btn-label{font-size:12px;color:var(--muted);font-weight:400;}
+/* Individual button styles */
+.btn-red{border-color:rgba(255,71,87,0.3);background:rgba(255,71,87,0.06);}
+.btn-red:hover{background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.6);color:var(--red);}
+.btn-blue{border-color:rgba(0,200,255,0.2);background:rgba(0,200,255,0.04);}
+.btn-blue:hover{background:rgba(0,200,255,0.12);border-color:var(--cyan);color:var(--cyan);}
+.btn-yellow{border-color:rgba(255,165,2,0.2);background:rgba(255,165,2,0.04);}
+.btn-yellow:hover{background:rgba(255,165,2,0.12);border-color:var(--yellow);color:var(--yellow);}
+.btn-green{border-color:rgba(0,255,135,0.2);background:rgba(0,255,135,0.04);}
+.btn-green:hover{background:rgba(0,255,135,0.12);border-color:var(--green);color:var(--green);}
+.btn-purple{border-color:rgba(160,80,255,0.2);background:rgba(160,80,255,0.04);}
+.btn-purple:hover{background:rgba(160,80,255,0.12);border-color:#a050ff;color:#a050ff;}
+.btn-orange{border-color:rgba(255,107,53,0.2);background:rgba(255,107,53,0.04);}
+.btn-orange:hover{background:rgba(255,107,53,0.12);border-color:#ff6b35;color:#ff6b35;}
+
+/* ── Status output ── */
+.status-box{margin-top:14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;min-height:48px;color:var(--muted);}
+.status-box.active{border-color:var(--red);color:var(--red);}
+
+/* ── Access log ── */
+.log-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;}
+.log-row:last-child{border:none;}
+.log-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:60px;}
+.log-sev{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:65px;text-align:center;}
+.sev-ok{background:rgba(0,255,135,0.1);color:var(--green);}
+.sev-warn{background:rgba(255,165,2,0.1);color:var(--yellow);}
+.sev-crit{background:rgba(255,71,87,0.1);color:var(--red);}
+
+@media(max-width:800px){.main{grid-template-columns:1fr;}.controls-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div id="alarm-banner">🚨 SECURITY ALERT — ACTION LOGGED — PHYSICAL ALARM ACTIVE 🚨</div>
+<div id="alarm-overlay"></div>
+
+<nav class="navbar">
+  <a class="nav-brand" href="/">
+    <div class="nav-icon">🏢</div>
+    <div><div class="nav-name">DataCore NOC</div><div class="nav-sub">Network Operations Center v4.2.1</div></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Dashboard</a>
+    <a class="nav-link active" href="/admin">Admin Panel</a>
+    <a class="nav-link" href="/emergency">System Status</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge">LEVEL-4 ACCESS</span>
+    <div class="nav-user">
+      <div class="nav-user-icon">👤</div>
+      <span id="nav-username">admin</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="profile-card">
+      <div class="profile-avatar">👤</div>
+      <div class="profile-name" id="profile-name">Admin User</div>
+      <div class="profile-role">SYSTEM ADMINISTRATOR</div>
+      <span class="profile-badge">● SESSION ACTIVE</span>
+    </div>
+
+    <div class="sys-info">
+      <div class="sys-info-title">System Status</div>
+      <div class="sys-row"><span>Cluster</span><span class="sys-row-val val-green">ONLINE</span></div>
+      <div class="sys-row"><span>Firewall</span><span class="sys-row-val val-green">ACTIVE</span></div>
+      <div class="sys-row"><span>Backup</span><span class="sys-row-val val-yellow">RUNNING</span></div>
+      <div class="sys-row"><span>Temperature</span><span class="sys-row-val val-cyan" id="temp-disp">--°C</span></div>
+      <div class="sys-row"><span>Humidity</span><span class="sys-row-val val-cyan" id="hum-disp">--%</span></div>
+      <div class="sys-row"><span>Uptime</span><span class="sys-row-val val-green">99.97%</span></div>
+    </div>
+
+    <div class="session-card">
+      <div class="session-title">Session Info</div>
+      <div class="session-val" id="session-time">Authenticating...</div>
+      <div class="session-val" style="margin-top:4px;color:var(--muted);font-size:10px">IP: <span id="client-ip">--</span></div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Welcome -->
+    <div class="welcome-banner">
+      <span class="welcome-icon">🔓</span>
+      <div>
+        <div class="welcome-title">Welcome back, <span id="welcome-name">Administrator</span></div>
+        <div class="welcome-sub">You have full administrative access to DataCore infrastructure.</div>
+      </div>
+      <div class="access-badge">PRIVILEGED SESSION</div>
+    </div>
+
+    <!-- Admin Controls — THE TRAP -->
+    <div class="card">
+      <div class="card-title">
+        ⚙️ Admin Controls
+        <span class="card-badge-red">PRIVILEGED</span>
+      </div>
+      <div class="controls-grid">
+        <button class="ctrl-btn btn-red" onclick="doAction('emergency_shutdown')">
+          <span class="ctrl-btn-icon">🔴</span>
+          <span>Emergency Shutdown</span>
+          <span class="ctrl-btn-label">Force-stop all rack units</span>
+        </button>
+        <button class="ctrl-btn btn-blue" onclick="doAction('reboot_all_servers')">
+          <span class="ctrl-btn-icon">🔄</span>
+          <span>Reboot All Servers</span>
+          <span class="ctrl-btn-label">Graceful restart sequence</span>
+        </button>
+        <button class="ctrl-btn btn-yellow" onclick="doAction('firewall_disable')">
+          <span class="ctrl-btn-icon">🛡️</span>
+          <span>Toggle Firewall</span>
+          <span class="ctrl-btn-label">Enable/disable perimeter FW</span>
+        </button>
+        <button class="ctrl-btn btn-green" onclick="doAction('dump_logs')">
+          <span class="ctrl-btn-icon">📋</span>
+          <span>Dump System Logs</span>
+          <span class="ctrl-btn-label">Export all audit logs</span>
+        </button>
+        <button class="ctrl-btn btn-purple" onclick="doAction('reset_passwords')">
+          <span class="ctrl-btn-icon">🔑</span>
+          <span>Reset All Passwords</span>
+          <span class="ctrl-btn-label">Force password rotation</span>
+        </button>
+        <button class="ctrl-btn btn-orange" onclick="doAction('wipe_backup')">
+          <span class="ctrl-btn-icon">🗑️</span>
+          <span>Wipe Backup Store</span>
+          <span class="ctrl-btn-label">Clear all backup snapshots</span>
+        </button>
+      </div>
+      <div class="status-box" id="status-box">Awaiting command input...</div>
+    </div>
+
+    <!-- Recent Access Log -->
+    <div class="card">
+      <div class="card-title">🔐 Recent Access Log</div>
+      <div id="log-body">
+        <div class="log-row">
+          <span class="log-time" id="login-time">--:--:--</span>
+          <span class="log-sev sev-ok">SUCCESS</span>
+          <span>Admin login from <span id="log-ip">--</span></span>
+        </div>
+        <div class="log-row">
+          <span class="log-time">03:41:22</span>
+          <span class="log-sev sev-warn">WARNING</span>
+          <span>Climate subsystem offline — DH-B1, DH-B2, DH-B3 unresponsive</span>
+        </div>
+        <div class="log-row">
+          <span class="log-time">03:39:10</span>
+          <span class="log-sev sev-ok">SUCCESS</span>
+          <span>Firmware update applied — SRV-CORE-01, SRV-CORE-02</span>
+        </div>
+        <div class="log-row">
+          <span class="log-time">02:15:04</span>
+          <span class="log-sev sev-crit">CRITICAL</span>
+          <span>3 failed login attempts from 185.220.101.47</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Populate username from URL param ─────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const user = params.get('user') || 'Administrator';
+document.getElementById('profile-name').textContent = user;
+document.getElementById('welcome-name').textContent = user;
+document.getElementById('nav-username').textContent = user;
+
+// ── Session time ──────────────────────────────────────────────────────────────
+document.getElementById('session-time').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false}) + ' UTC';
+document.getElementById('login-time').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+
+// ── Live sensor data ──────────────────────────────────────────────────────────
+function fetchSensors(){
+  fetch('/api/sensors').then(r=>r.json()).then(d=>{
+    document.getElementById('temp-disp').textContent = d.temperature.toFixed(1)+'°C';
+    document.getElementById('hum-disp').textContent  = d.humidity.toFixed(1)+'%';
+  }).catch(()=>{});
+}
+setInterval(fetchSensors,4000); fetchSensors();
+
+// ── Admin action (THE TRAP) ───────────────────────────────────────────────────
+function doAction(action){
+  const box = document.getElementById('status-box');
+  box.textContent = '⏳ Executing ' + action.replace(/_/g,' ') + '...';
+  box.className = 'status-box';
+
+  fetch('/api/action', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action, user})
+  }).then(r=>r.json()).then(d=>{
+    box.textContent = '⚠️  ' + d.message + ' — Action logged to audit trail.';
+    box.className = 'status-box active';
+    // Show alarm UI
+    document.getElementById('alarm-overlay').style.display = 'block';
+    document.getElementById('alarm-banner').style.display = 'block';
+    // Auto-clear after 10s
+    setTimeout(()=>{
+      document.getElementById('alarm-overlay').style.display = 'none';
+      document.getElementById('alarm-banner').style.display = 'none';
+      box.textContent = 'Awaiting command input...';
+      box.className = 'status-box';
+    }, 10000);
+  }).catch(()=>{
+    box.textContent = '❌ Connection error — retrying...';
+  });
+}
+</script>
+</body>
+</html>
