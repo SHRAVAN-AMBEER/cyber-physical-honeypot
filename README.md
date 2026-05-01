@@ -1,69 +1,163 @@
-# 🏫 CBIT Exam Vault — Cyber-Physical Honeypot System
+# 🏛️ EduCore Exam Vault — Cyber-Physical Honeypot System
 
-> A unified cyber-physical honeypot designed to detect and trap unauthorized access attempts on a simulated CBIT Examination Branch Data Center. Combines a high-fidelity decoy web portal with real-time physical alarms (buzzer + LED) and instant Telegram notifications.
+> A unified cyber-physical honeypot deployed on a Raspberry Pi that simulates a secure institutional examination data center. Combines a high-fidelity 4-page deceptive web portal with real-time physical GPIO alarms (buzzer + LED) and instant Telegram notifications to detect, log, and trap unauthorized access attempts.
 
 ---
 
 ## 📌 Table of Contents
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
-- [Hardware Requirements](#hardware-requirements)
-- [Software Requirements](#software-requirements)
-- [GPIO Pin Mapping](#gpio-pin-mapping)
-- [Installation & Setup](#installation--setup)
 - [How It Works](#how-it-works)
 - [Web Portal Pages](#web-portal-pages)
 - [Trigger Table](#trigger-table)
+- [Hardware Requirements](#hardware-requirements)
+- [GPIO Pin Mapping](#gpio-pin-mapping)
+- [Software Requirements](#software-requirements)
+- [Installation & Setup](#installation--setup)
 - [Project Structure](#project-structure)
+- [Simulating an Attack](#simulating-an-attack)
 
 ---
 
 ## 📖 Overview
 
-This project is a **cyber-physical honeypot** deployed on a Raspberry Pi. It simulates a sensitive institutional data center — the **CBIT Examination Branch Vault** — storing digital exam scripts. The goal is to:
+This project is a **cyber-physical honeypot** deployed on a Raspberry Pi. It simulates a sensitive institutional data center — the **EduCore Exam Vault** — that stores digital exam scripts. The system consists of two tightly integrated layers:
 
-- **Lure** unauthorized users into interacting with a convincing fake portal
-- **Capture** credentials entered at the login and emergency override pages
-- **Trigger** a real physical alarm (buzzer + LED) when an attacker takes destructive actions
-- **Alert** the administrator in real time via Telegram with the attacker's IP, username, password, and action taken
+- **Physical Layer** — real IoT sensors (DHT-11, MC-38) and actuators (buzzer, LED) connected via GPIO
+- **Cyber Layer** — a convincing 4-page Flask web portal that lures, traps, and logs attackers
+
+Any unauthorized interaction — from visiting pages to clicking simulated admin controls — triggers **real-time Telegram notifications** and/or **physical GPIO alarms**.
 
 ---
 
 ## 🏗️ System Architecture
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                     Raspberry Pi                           │
-│                                                            │
-│  ┌──────────────────┐     IPC via JSON flag                │
-│  │  unified_server  │ ─────────────────────► hardware_trap │
-│  │  (Flask :8080)   │                        (GPIO owner)  │
-│  └────────┬─────────┘                        └────┬───────┘│
-│           │ Telegram alerts                       │        │
-│           ▼                                  Buzzer + LED  │
-│     decoy_alert.py                                         │
-│           │                                                │
-│           ▼                                                │
-│    Telegram Bot API                                        │
-│                                                            │
-│  Sensors: DHT-11 (Temp/Humidity) · MC-38 (Door Reed)      │
-└────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        Raspberry Pi                             │
+│                                                                 │
+│  ┌─────────────────────────┐    IPC via JSON flag (500ms poll)  │
+│  │   unified_server.py     │ ──────────────────► hardware_trap  │
+│  │   Flask :8080           │   /tmp/honeypot_state.json         │
+│  │   4 web trap pages      │                    │               │
+│  │   Telegram alerts       │               GPIO owner           │
+│  └──────────┬──────────────┘          Buzzer · LED · Reed       │
+│             │                                                   │
+│     decoy_alert.py                                              │
+│             │                                                   │
+│             ▼                                                   │
+│      Telegram Bot API ──────────────► Admin's Phone             │
+│                                                                 │
+│  Sensors: DHT-11 (GPIO 4) · MC-38 Reed Switch (GPIO 17)        │
+│  Alarms:  Active Buzzer (GPIO 18) · Red LED (GPIO 23)          │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Two-Process Design
+
+The system runs as **two separate processes** launched by `start.sh`:
+
+| Process | File | Role |
+|---|---|---|
+| **Process 1** | `unified_server.py` | Flask web server on port 8080. Handles all web trap logic, sends Telegram alerts, writes IPC alarm flag to JSON |
+| **Process 2** | `hardware_trap.py` | Sole owner of all GPIO pins. Polls JSON flag every 500ms, fires buzzer+LED when requested. Also monitors MC-38 for physical breach |
+
+### IPC Mechanism (Web → GPIO)
+
+The web process **cannot access GPIO directly**. Communication works via a shared JSON file:
+
+```
+unified_server.py  ──writes──►  /tmp/honeypot_state.json  {"alarm_requested": true}
+                                         │
+hardware_trap.py   ──polls every 500ms──►┘
+                   ──on flag detected──► GPIO Buzzer + LED ON → flag reset to false
+```
+
+> End-to-end latency: **< 500ms** from web trigger to physical alarm.
+
+---
+
+## ⚙️ How It Works
+
+### Cyber Layer
+1. Attacker discovers the portal at `http://<pi-ip>:8080/`
+2. They see a convincing NOC dashboard showing **live temperature & humidity** from the real DHT-11 sensor
+3. They navigate to `/login`, enter any credentials → captured and sent to Telegram → **redirected to `/admin`**
+4. The admin panel has 6 realistic-looking vault control buttons — clicking **any** triggers the physical alarm
+5. `/emergency` presents a fake "VAULT TEMP CRITICAL" panic scenario, pressuring them to enter override credentials
+
+### Physical Layer
+- **DHT-11** (GPIO 4): reads temperature & humidity every 3s → displayed live on dashboard
+- **MC-38** (GPIO 17): detects physical door opening → immediate CRITICAL alarm + Telegram
+- **Buzzer** (GPIO 18): sounds on attack actions
+- **LED** (GPIO 23): lights up alongside buzzer
+
+---
+
+## 🌐 Web Portal Pages
+
+| URL | Page Name | Purpose | Alarm? |
+|---|---|---|---|
+| `/` | EduCore Exam Vault Dashboard | Live NOC monitor — DHT-11 data, vault server status, security event log | ❌ Telegram only |
+| `/login` | Secure Login | Credential trap — accepts **any** credentials, logs them, redirects to `/admin` | ❌ Telegram only |
+| `/admin` | Admin Panel | 6 trap control buttons — each fires buzzer + LED + Telegram on click | ✅ On button click |
+| `/emergency` | System Status | Social engineering panic page — fake vault cooling failure, override form submission fires alarm | ✅ On form submit |
+
+### Admin Panel — 6 Trap Buttons
+
+| Button | Label | Sub-label |
+|---|---|---|
+| 🔴 | Seal Exam Vault | Force-lock all digital storage units |
+| 🔄 | Verify Script Integrity | Run MD5 checksum on all PDF scripts |
+| 🛡️ | Lock Archive Access | Disable external network access to archives |
+| 📋 | Export Exam Audit Trail | Generate signed examiner log report |
+| 🔑 | Reset Examiner Access | Force rotation of all faculty keys |
+| 🗑️ | Purge Cached Scripts | Clear local cache from memory banks |
+
+---
+
+## ⚡ Trigger Table
+
+| Attacker Action | Telegram Alert | Severity | Buzzer + LED |
+|---|---|---|---|
+| Visit Dashboard (`/`) | ✅ | INFO | ❌ |
+| Visit System Status (`/emergency`) | ✅ | WARNING | ❌ |
+| Submit Login Form (`/login POST`) | ✅ + credentials captured | CRITICAL | ❌ |
+| Reach Admin Panel (`/admin`) | ✅ | CRITICAL | ❌ |
+| Click any Admin Control Button | ✅ + action name captured | CRITICAL | ✅ |
+| Submit Emergency Override Form | ✅ + credentials captured | CRITICAL | ✅ |
+| Physical Door Opened (MC-38) | ✅ + sensor data | CRITICAL | ✅ |
 
 ---
 
 ## 🔧 Hardware Requirements
 
-| Component | Specification | Purpose |
-|---|---|---|
-| Raspberry Pi | Model 3B / 4 (any model with GPIO) | Main compute unit |
-| DHT-11 Sensor | Temperature & Humidity | Live telemetry on dashboard |
-| MC-38 Magnetic Reed Switch | Door sensor | Physical break-in detection |
-| Active Buzzer | 5V Active Buzzer Module | Audible alarm on attack |
-| Red LED | 5mm, with 330Ω resistor | Visual alarm indicator |
-| Jumper Wires | M-to-F / M-to-M | GPIO connections |
-| Breadboard | Half/Full size | Component mounting |
-| MicroSD Card | 8GB+ with Raspberry Pi OS | OS storage |
+| # | Component | Specification | Purpose |
+|---|---|---|---|
+| 1 | **Raspberry Pi** | Model 3B+ or 4 (1GB+ RAM) | Central compute unit |
+| 2 | **MicroSD Card** | 16GB Class 10, Raspberry Pi OS | OS + project storage |
+| 3 | **DHT-11 Sensor** | 3.5V–5V, ±2°C accuracy | Live temperature & humidity telemetry |
+| 4 | **MC-38 Reed Switch** | Normally Closed (NC), magnetic | Physical door breach detection |
+| 5 | **Active Buzzer** | 5V active, ~85dB | Audible alarm |
+| 6 | **Red LED** | 5mm, 20mA max | Visual alarm indicator |
+| 7 | **Resistor** | 330Ω, 1/4W | LED current limiter |
+| 8 | **Breadboard** | Half/full size solderless | Component mounting |
+| 9 | **Jumper Wires** | M-to-F and M-to-M | GPIO connections |
+| 10 | **Power Supply** | 5V/2.5A Micro-USB (Pi 3B) or USB-C (Pi 4) | Power |
+| 11 | **Network** | Wi-Fi or Ethernet | Web server + Telegram |
+
+---
+
+## 📍 GPIO Pin Mapping (BCM Numbering)
+
+| BCM GPIO | Physical Pin | Component | Direction | Notes |
+|---|---|---|---|---|
+| **GPIO 4** | Pin 7 | DHT-11 Data | Input | Single-wire protocol |
+| **GPIO 17** | Pin 11 | MC-38 Reed Switch | Input | Pull-up enabled; LOW = door open |
+| **GPIO 18** | Pin 12 | Active Buzzer (+) | Output | HIGH = ON |
+| **GPIO 23** | Pin 16 | Red LED (via 330Ω) | Output | HIGH = ON |
+| 3.3V / 5V | Pin 1, 2, 4 | VCC for sensors | Power | DHT-11: 3.3V; Buzzer: 5V |
+| GND | Pin 6, 9, 14 | Ground | Ground | Common reference |
 
 ---
 
@@ -71,8 +165,8 @@ This project is a **cyber-physical honeypot** deployed on a Raspberry Pi. It sim
 
 ### System Dependencies
 ```bash
-sudo apt update
-sudo apt install -y python3-pip python3-venv liblgpio-dev swig python3-libgpiod
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3-pip python3-venv liblgpio-dev swig python3-libgpiod git
 ```
 
 ### Python Libraries
@@ -80,32 +174,22 @@ sudo apt install -y python3-pip python3-venv liblgpio-dev swig python3-libgpiod
 pip install flask requests python-dotenv adafruit-circuitpython-dht gpiozero lgpio
 ```
 
-### Full `requirements.txt`
-```
-flask
-requests
-python-dotenv
-adafruit-circuitpython-dht
-gpiozero
-lgpio
-```
+| Library | Purpose |
+|---|---|
+| `flask` | Web framework — serves all 4 honeypot pages on port 8080 |
+| `requests` | HTTP client — sends Telegram Bot API notifications |
+| `python-dotenv` | Loads `BOT_TOKEN` and `CHAT_ID` from `.env` file securely |
+| `adafruit-circuitpython-dht` | DHT-11 sensor driver for GPIO 4 |
+| `gpiozero` | High-level GPIO control for buzzer, LED, reed switch |
+| `lgpio` | Low-level GPIO backend for gpiozero on newer Pi OS |
 
-### Environment Variables (`.env` file)
+### Environment Variables (`.env`)
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
 CHAT_ID=your_telegram_chat_id_here
 ```
 
----
-
-## 📍 GPIO Pin Mapping (BCM Numbering)
-
-| GPIO (BCM) | Component | Direction |
-|---|---|---|
-| GPIO 4 | DHT-11 Data Pin | Input |
-| GPIO 17 | MC-38 Reed Switch | Input (Pull-Up) |
-| GPIO 18 | Active Buzzer (+) | Output |
-| GPIO 23 | Red LED (+) | Output |
+> ⚠️ The `.env` file is listed in `.gitignore` — **never commit it to GitHub**. Use `.env.example` as a template.
 
 ---
 
@@ -117,7 +201,7 @@ git clone https://github.com/SHRAVAN-AMBEER/cyber-physical-honeypot.git
 cd cyber-physical-honeypot
 ```
 
-### 2. Create & Activate Virtual Environment
+### 2. Create Virtual Environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate
@@ -129,11 +213,10 @@ pip install -r requirements.txt
 ```
 
 ### 4. Configure Telegram
-Create a `.env` file in the project root:
 ```bash
 cp .env.example .env
 nano .env
-# Fill in your BOT_TOKEN and CHAT_ID
+# Fill in BOT_TOKEN and CHAT_ID
 ```
 
 ### 5. Run the System
@@ -141,48 +224,15 @@ nano .env
 bash start.sh
 ```
 
-This launches:
-- `hardware_trap.py` — Owns all GPIO pins, listens for alarm requests
-- `unified_server.py` — Serves the honeypot web portal on port `8080`
+This starts **two processes**:
+- `hardware_trap.py` — takes ownership of all GPIO pins
+- `unified_server.py` — starts web server on port 8080
 
----
-
-## ⚙️ How It Works
-
-### Physical Layer
-- **DHT-11** continuously reads temperature & humidity, displayed live on the dashboard
-- **MC-38 Reed Switch** detects physical door opening — instantly triggers buzzer + LED + Telegram alert
-
-### Web Layer — IPC Mechanism
-The web server **cannot access GPIO directly**. Instead:
-1. `unified_server.py` writes an `alarm_requested: true` flag to `/tmp/honeypot_state.json`
-2. `hardware_trap.py` polls this file every 500ms
-3. When the flag is detected, it triggers the physical alarm and resets the flag
-
----
-
-## 🌐 Web Portal Pages
-
-| URL | Page | Purpose |
-|---|---|---|
-| `/` | CBIT Exam Vault Dashboard | Live telemetry display, security event log |
-| `/login` | Secure Login | Credential trap — accepts anything, captures & logs |
-| `/admin` | Admin Panel | High-fidelity trap with 6 destructive-looking vault controls |
-| `/emergency` | System Status | Social engineering — warns exam scripts are at risk |
-
----
-
-## ⚡ Trigger Table
-
-| Attacker Action | Telegram Alert | Buzzer + LED |
-|---|---|---|
-| Visit Dashboard (`/`) | ✅ Info | ❌ |
-| Visit System Status (`/emergency`) | ✅ Warning | ❌ |
-| Submit Login Form | ✅ Critical + Credentials | ❌ |
-| Reach Admin Panel (`/admin`) | ✅ Critical | ❌ |
-| Click any Admin Control Button | ✅ Critical + Action Name | ✅ |
-| Submit Emergency Override Form | ✅ Critical + Credentials | ✅ |
-| Physical Door Opened (Reed Switch) | ✅ Critical + Sensor Data | ✅ |
+### 6. Access the Portal
+Open any browser on the same network:
+```
+http://<your-pi-ip>:8080/
+```
 
 ---
 
@@ -190,28 +240,46 @@ The web server **cannot access GPIO directly**. Instead:
 
 ```
 cyber-physical-honeypot/
-├── unified_server.py       # Main Flask web honeypot
-├── hardware_trap.py        # GPIO controller + alarm watcher
-├── sensor_hub.py           # DHT-11 reader + IPC alarm bridge
-├── decoy_alert.py          # Telegram notification helper
-├── start.sh                # Launch script
+├── unified_server.py       # Flask web app: 4 routes, trap logic, Telegram, IPC flag
+├── hardware_trap.py        # GPIO owner: buzzer, LED, MC-38, 500ms alarm watcher
+├── sensor_hub.py           # DHT-11 reader: get_sensor_data() + request_alarm()
+├── decoy_alert.py          # Telegram Bot API message sender
+├── start.sh                # Bash launcher for both processes
 ├── requirements.txt        # Python dependencies
-├── .env.example            # Template for credentials
+├── .env.example            # Template for Telegram credentials
 └── templates/
-    ├── dashboard.html      # NOC Monitor dashboard
-    ├── login.html          # Credential trap page
-    ├── admin.html          # Admin panel trap
+    ├── dashboard.html      # EduCore NOC dashboard (live sensor data)
+    ├── login.html          # Credential capture login page
+    ├── admin.html          # Admin panel trap (6 vault control buttons)
     └── emergency.html      # Social engineering panic page
 ```
+
+---
+
+## 🎯 Simulating an Attack
+
+Test from **any device on the same network**:
+
+| Step | Action | What Happens |
+|---|---|---|
+| 1 | Open `http://<pi-ip>:8080/` | Telegram: Dashboard visit (INFO) |
+| 2 | Click **Secure Login** in navbar | Visit the login page |
+| 3 | Enter **any username/password** and submit | Telegram: Credentials captured (CRITICAL) → redirected to Admin Panel |
+| 4 | You're now on the Admin Panel | Telegram: Admin panel accessed (CRITICAL) |
+| 5 | Click any vault control button (e.g. "Seal Exam Vault") | 🚨 Buzzer + LED + Telegram: Action triggered (CRITICAL) |
+| 6 | Visit `http://<pi-ip>:8080/emergency` | Telegram: System Status viewed (WARNING) |
+| 7 | Submit the override form | 🚨 Buzzer + LED + Telegram: Override attempted (CRITICAL) |
+| 8 | Open the physical enclosure (MC-38) | 🚨 Buzzer + LED + Telegram: Physical breach (CRITICAL) |
 
 ---
 
 ## 👨‍🎓 Project Info
 
 - **Institution:** Chaitanya Bharathi Institute of Technology (CBIT), Hyderabad
-- **Department:** Electronics & IoT
-- **Subject:** Embedded Systems & IoT
-- **Platform:** Raspberry Pi
+- **Department:** Information Technology
+- **Subject:** Embedded Systems & IoT (ESIOT)
+- **Platform:** Raspberry Pi 3B / 4
+- **Academic Year:** 2025–2026
 
 ---
 
