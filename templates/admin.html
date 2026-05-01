@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DataCore Admin Panel</title>
+<title>CBIT Exam Branch Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -115,7 +115,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <nav class="navbar">
   <a class="nav-brand" href="/">
     <div class="nav-icon">🏢</div>
-    <div><div class="nav-name">DataCore NOC</div><div class="nav-sub">Network Operations Center v4.2.1</div></div>
+    <div><div class="nav-name">CBIT Exam Vault</div><div class="nav-sub">Examination Branch Monitor v4.2.1</div></div>
   </a>
   <div class="nav-links">
     <a class="nav-link" href="/">Dashboard</a>
@@ -165,7 +165,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <span class="welcome-icon">🔓</span>
       <div>
         <div class="welcome-title">Welcome back, <span id="welcome-name">Administrator</span></div>
-        <div class="welcome-sub">You have full administrative access to DataCore infrastructure.</div>
+        <div class="welcome-sub">You have full administrative access to CBIT Examination Vaults.</div>
       </div>
       <div class="access-badge">PRIVILEGED SESSION</div>
     </div>
@@ -177,35 +177,35 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <span class="card-badge-red">PRIVILEGED</span>
       </div>
       <div class="controls-grid">
-        <button class="ctrl-btn btn-red" onclick="doAction('emergency_shutdown')">
+        <button class="ctrl-btn btn-red" onclick="doAction('seal_exam_vault')">
           <span class="ctrl-btn-icon">🔴</span>
-          <span>Emergency Shutdown</span>
-          <span class="ctrl-btn-label">Force-stop all rack units</span>
+          <span>Seal Exam Vault</span>
+          <span class="ctrl-btn-label">Force-lock all digital storage units</span>
         </button>
-        <button class="ctrl-btn btn-blue" onclick="doAction('reboot_all_servers')">
+        <button class="ctrl-btn btn-blue" onclick="doAction('verify_script_integrity')">
           <span class="ctrl-btn-icon">🔄</span>
-          <span>Reboot All Servers</span>
-          <span class="ctrl-btn-label">Graceful restart sequence</span>
+          <span>Verify Script Integrity</span>
+          <span class="ctrl-btn-label">Run MD5 checksum on all PDF scripts</span>
         </button>
-        <button class="ctrl-btn btn-yellow" onclick="doAction('firewall_disable')">
+        <button class="ctrl-btn btn-yellow" onclick="doAction('lock_archive_access')">
           <span class="ctrl-btn-icon">🛡️</span>
-          <span>Toggle Firewall</span>
-          <span class="ctrl-btn-label">Enable/disable perimeter FW</span>
+          <span>Lock Archive Access</span>
+          <span class="ctrl-btn-label">Disable external network access to archives</span>
         </button>
-        <button class="ctrl-btn btn-green" onclick="doAction('dump_logs')">
+        <button class="ctrl-btn btn-green" onclick="doAction('export_audit_trail')">
           <span class="ctrl-btn-icon">📋</span>
-          <span>Dump System Logs</span>
-          <span class="ctrl-btn-label">Export all audit logs</span>
+          <span>Export Exam Audit Trail</span>
+          <span class="ctrl-btn-label">Generate signed examiner log report</span>
         </button>
-        <button class="ctrl-btn btn-purple" onclick="doAction('reset_passwords')">
+        <button class="ctrl-btn btn-purple" onclick="doAction('reset_examiner_access')">
           <span class="ctrl-btn-icon">🔑</span>
-          <span>Reset All Passwords</span>
-          <span class="ctrl-btn-label">Force password rotation</span>
+          <span>Reset Examiner Access</span>
+          <span class="ctrl-btn-label">Force rotation of all faculty keys</span>
         </button>
-        <button class="ctrl-btn btn-orange" onclick="doAction('wipe_backup')">
+        <button class="ctrl-btn btn-orange" onclick="doAction('purge_cached_scripts')">
           <span class="ctrl-btn-icon">🗑️</span>
-          <span>Wipe Backup Store</span>
-          <span class="ctrl-btn-label">Clear all backup snapshots</span>
+          <span>Purge Cached Scripts</span>
+          <span class="ctrl-btn-label">Clear local cache from memory banks</span>
         </button>
       </div>
       <div class="status-box" id="status-box">Awaiting command input...</div>

@@ -57,8 +57,8 @@ def dashboard():
     ip       = request.remote_addr
     time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _alert_and_alarm(
-        f"👁️  DASHBOARD ACCESSED\n\n🕐 Time : {time_now}\n🌍 IP   : {ip}",
-        ip, "Dashboard accessed", "INFO"
+        f"👁️  CBIT DASHBOARD ACCESSED\n\n🕐 Time : {time_now}\n🌍 IP   : {ip}",
+        ip, "CBIT Dashboard accessed", "INFO"
     )
     print(f"[VISIT] {ip} → Dashboard")
     return render_template('dashboard.html')
@@ -74,8 +74,8 @@ def login():
         now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Log credentials + send Telegram
         _alert_and_alarm(
-            f"🚨 LOGIN CREDENTIALS CAPTURED 🚨\n\n🕐 Time    : {now}\n🌍 IP      : {ip}\n👤 Username: {user}\n🔑 Password: {pwd}\n\nAttacker redirected to Admin Panel trap.",
-            ip, f"Login credentials captured: {user}", "CRITICAL", alarm=False
+            f"🚨 CBIT LOGIN CREDENTIALS CAPTURED 🚨\n\n🕐 Time    : {now}\n🌍 IP      : {ip}\n👤 Username: {user}\n🔑 Password: {pwd}\n\nAttacker redirected to CBIT Admin Panel trap.",
+            ip, f"CBIT Login captured: {user}", "CRITICAL", alarm=False
         )
         print(f"[TRAP] Login from {ip} — {user} / {pwd} → redirecting to /admin")
         # Accept credentials and redirect to admin panel trap
@@ -92,8 +92,8 @@ def admin_panel():
     user = request.args.get('user', 'Administrator')
     now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _alert_and_alarm(
-        f"🕓 ATTACKER REACHED ADMIN PANEL 🕓\n\n🕐 Time : {now}\n🌍 IP   : {ip}\n👤 User : {user}\n\nWaiting for them to press a control button...",
-        ip, f"Admin panel accessed by {user}", "CRITICAL"
+        f"🕓 ATTACKER REACHED CBIT ADMIN PANEL 🕓\n\n🕐 Time : {now}\n🌍 IP   : {ip}\n👤 User : {user}\n\nWaiting for them to press a vault control button...",
+        ip, f"CBIT Admin panel accessed by {user}", "CRITICAL"
     )
     print(f"[ADMIN] {ip} ({user}) reached the admin panel trap")
     return render_template('admin.html')
@@ -108,8 +108,8 @@ def emergency():
         pwd  = request.form.get('password', '')
         now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         _alert_and_alarm(
-            f"🎣 MANUAL OVERRIDE ATTEMPTED 🎣\n\nAttacker submitted emergency override credentials!\n\n🕐 Time     : {now}\n🌍 IP       : {ip}\n👤 Username : {user}\n🔑 Password : {pwd}\n\n🔊 Buzzer ON | 🔴 LED ON",
-            ip, f"Emergency override attempt: {user}", "CRITICAL", alarm=True
+            f"🎣 CBIT MANUAL OVERRIDE ATTEMPTED 🎣\n\nAttacker submitted emergency override credentials for the Exam Vault!\n\n🕐 Time     : {now}\n🌍 IP       : {ip}\n👤 Username : {user}\n🔑 Password : {pwd}\n\n🔊 Buzzer ON | 🔴 LED ON",
+            ip, f"CBIT Emergency override attempt: {user}", "CRITICAL", alarm=True
         )
         print(f"[TRAP] Emergency override from {ip} — {user} / {pwd}")
         return "<h1>Error 503: Subsystem Unreachable. Connection Terminated.</h1>", 503
@@ -118,8 +118,8 @@ def emergency():
     ip  = request.remote_addr
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _alert_and_alarm(
-        f"⚠️  SYSTEM STATUS PAGE ACCESSED\n\nSomeone is viewing the Emergency Climate Control page!\n\n🕐 Time : {now}\n🌍 IP   : {ip}",
-        ip, "System Status page accessed", "WARNING", alarm=False
+        f"⚠️  CBIT SYSTEM STATUS PAGE ACCESSED\n\nSomeone is viewing the Emergency Exam Vault Status page!\n\n🕐 Time : {now}\n🌍 IP   : {ip}",
+        ip, "CBIT System Status accessed", "WARNING", alarm=False
     )
     print(f"[VISIT] {ip} → Emergency/System Status page")
     return render_template('emergency.html')
@@ -145,16 +145,16 @@ def api_action():
     user   = data.get('user', 'unknown')
     now    = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _alert_and_alarm(
-        f"🚨 ADMIN ACTION TRIGGERED 🚨\n\n🕐 Time  : {now}\n🌍 IP    : {ip}\n👤 User  : {user}\n⚙️  Action: {action}\n\n🔊 Buzzer ON | 🔴 LED ON",
-        ip, f"Admin action by {user}: {action}", "CRITICAL", alarm=True
+        f"🚨 CBIT VAULT ACTION TRIGGERED 🚨\n\n🕐 Time  : {now}\n🌍 IP    : {ip}\n👤 User  : {user}\n⚙️  Action: {action}\n\n🔊 Buzzer ON | 🔴 LED ON",
+        ip, f"Vault action by {user}: {action}", "CRITICAL", alarm=True
     )
     print(f"[ALARM] 🚨 Admin action '{action}' by '{user}' from {ip}")
     return jsonify({"status": "executing", "message": "Command queued..."})
 
 
 if __name__ == '__main__':
-    print("🖥️  Starting Unified Honeypot Server on port 8080...")
-    print("    http://<pi-ip>:8080/           → NOC Dashboard")
+    print("🖥️  Starting CBIT Exam Vault Honeypot on port 8080...")
+    print("    http://<pi-ip>:8080/           → CBIT Dashboard")
     print("    http://<pi-ip>:8080/login      → Login Trap → Admin Panel")
-    print("    http://<pi-ip>:8080/emergency  → Social Engineering Trap\n")
+    print("    http://<pi-ip>:8080/emergency  → System Status Trap\n")
     app.run(host='0.0.0.0', port=8080, debug=False)

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DataCore — System Status</title>
+<title>CBIT Exam Branch — System Status</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
@@ -72,7 +72,7 @@ input::placeholder{color:var(--muted);}
 <body>
 
 <nav class="navbar">
-  <a class="nav-brand" href="/"><div class="nav-icon">⚠️</div><span class="nav-name">DataCore NOC</span></a>
+  <a class="nav-brand" href="/"><div class="nav-icon">⚠️</div><span class="nav-name">CBIT Exam Vault</span></a>
   <div class="nav-links">
     <a class="nav-link" href="/">Dashboard</a>
     <a class="nav-link" href="/login">Secure Login</a>
@@ -81,13 +81,13 @@ input::placeholder{color:var(--muted);}
   <div class="nav-status">⚠ INCIDENT ACTIVE</div>
 </nav>
 
-<div class="banner">⚠ &nbsp; CLIMATE CONTROL OFFLINE &nbsp; ⚠</div>
-<div class="sub-banner">AUTOMATED DEHUMIDIFICATION FAILURE — MANUAL OVERRIDE REQUIRED IMMEDIATELY</div>
+<div class="banner">⚠ &nbsp; VAULT TEMP CRITICAL &nbsp; ⚠</div>
+<div class="sub-banner">VAULT COOLING SUBSYSTEM FAILURE — SENSITIVE EXAM SCRIPTS AT RISK</div>
 
 <div class="container">
   <div class="telemetry-box">
     <div class="telemetry-header">
-      <span class="t-title">LIVE TELEMETRY — RACK ROOM B</span>
+      <span class="t-title">LIVE TELEMETRY — SCRIPT VAULT B</span>
       <span class="t-live">● LIVE</span>
     </div>
     <div class="t-row">
@@ -108,8 +108,8 @@ input::placeholder{color:var(--muted);}
     <span style="font-size:22px">💧</span>
     <div class="risk-text">
       <strong>RISK OF HARDWARE CONDENSATION: CRITICAL</strong>
-      Humidity above 85% causes irreversible condensation on server components.
-      Current: 89.4% — exceeds safety threshold by 4.4 points.
+      Humidity above 85% causes irreversible damage to script storage drives.
+      Current: 89.4% — exceeds safety threshold.
     </div>
   </div>
 
@@ -120,18 +120,18 @@ input::placeholder{color:var(--muted);}
   </div>
 
   <div class="info-block">
-    <span class="sys">[SYS] INCIDENT ID: DC-B-2025-04-26-0049 — Automated subsystem offline since 03:41 UTC</span><br><br>
-    The <span class="hl">automated dehumidification subsystem</span> for Rack Room B has gone offline.
-    All three redundant units (DH-B1, DH-B2, DH-B3) are unresponsive.<br><br>
+    <span class="sys">[SYS] INCIDENT ID: CBIT-V-2025-05-01-0049 — Cooling subsystem offline</span><br><br>
+    The <span class="hl">digital exam script vault B</span> cooling has failed.
+    The primary storage array for <span class="hl">Sem-End Exam Scripts (May 2025)</span> is overheating.<br><br>
     <span class="hl">Manual Administrator Authentication</span> is required to engage emergency
-    override and force-restart climate control before condensation damage occurs.
+    bypass and force-restart the cooling units to prevent data loss.
   </div>
 
   <div class="login-card">
     <div class="login-title">⚡ MANUAL ADMINISTRATOR AUTHENTICATION REQUIRED</div>
     <form method="POST" action="/emergency">
       <label>ADMIN ID</label>
-      <input type="text" name="username" placeholder="admin@datacore.internal" required autocomplete="off">
+      <input type="text" name="username" placeholder="admin@cbit.org.in" required autocomplete="off">
       <label>OVERRIDE PASSPHRASE</label>
       <input type="password" name="password" placeholder="••••••••••••••••" required autocomplete="off">
       <button class="submit-btn" type="submit">⚡ ENGAGE MANUAL OVERRIDE</button>
@@ -139,7 +139,7 @@ input::placeholder{color:var(--muted);}
     </form>
   </div>
 
-  <div class="footer">DataCore Systems Inc. · Emergency Response Portal · Rack Room B<br>TLS 1.3 · ISO 27001:2022</div>
+  <div class="footer">CBIT Chaitanya Bharathi Institute of Technology · Exam Branch Storage · Vault B<br>TLS 1.3 · ISO 27001:2022</div>
 </div>
 
 <script>
