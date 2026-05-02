@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>EduCore Exam Vault - Software & Hardware Requirements</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12pt;
+      color: #000;
+      background: #fff;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 25mm 20mm 20mm 25mm;
+    }
+
+    .hdr {
+      text-align: center;
+      border-bottom: 3px solid #1a3a6e;
+      padding-bottom: 16px;
+      margin-bottom: 28px;
+    }
+
+    .hdr .inst {
+      font-size: 15pt;
+      font-weight: 700;
+      color: #1a3a6e;
+    }
+
+    .hdr .dept {
+      font-size: 11pt;
+      color: #333;
+      margin-top: 4px;
+    }
+
+    .hdr .title {
+      font-size: 18pt;
+      font-weight: 700;
+      color: #0d2b5e;
+      margin-top: 14px;
+      text-transform: uppercase;
+    }
+
+    .hdr .sub {
+      font-size: 12pt;
+      color: #555;
+      margin-top: 6px;
+    }
+
+    .hdr .meta {
+      font-size: 10pt;
+      color: #777;
+      margin-top: 10px;
+    }
+
+    .sec {
+      margin-bottom: 32px;
+    }
+
+    .sec-title {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #fff;
+      background: #1a3a6e;
+      padding: 8px 14px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .subsec {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #1a3a6e;
+      border-left: 4px solid #1a3a6e;
+      padding-left: 10px;
+      margin: 18px 0 10px;
+    }
+
+    p {
+      margin-bottom: 10px;
+      line-height: 1.7;
+      text-align: justify;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+      font-size: 11pt;
+    }
+
+    th {
+      background: #1a3a6e;
+      color: #fff;
+      padding: 9px 12px;
+      text-align: left;
+      border: 1px solid #0d2b5e;
+    }
+
+    td {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    tr:nth-child(even) td {
+      background: #f0f4fb;
+    }
+
+    .info {
+      background: #eef3fb;
+      border-left: 5px solid #1a3a6e;
+      padding: 12px 16px;
+      margin: 12px 0 18px;
+      border-radius: 4px;
+      font-size: 11pt;
+      line-height: 1.6;
+    }
+
+    .warn {
+      background: #fff8e1;
+      border-left: 5px solid #f59e0b;
+      padding: 12px 16px;
+      margin: 12px 0 18px;
+      border-radius: 4px;
+      font-size: 11pt;
+      line-height: 1.6;
+    }
+
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 10pt;
+      margin-bottom: 14px;
+      white-space: pre-wrap;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 9pt;
+      color: #777;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+      margin-top: 30px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        margin: 0;
+        padding: 15mm 18mm;
+        width: 100%;
+      }
+
+      .sec-title {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      th {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <div class="hdr">
+      <div class="inst">CHAITANYA BHARATHI INSTITUTE OF TECHNOLOGY (CBIT)</div>
+      <div class="dept">Department of Information Technology</div>
+      <div class="title">Software &amp; Hardware Requirements</div>
+      <div class="sub">EduCore Exam Vault &mdash; Cyber-Physical Honeypot System</div>
+      <div class="meta">Academic Year: 2025&ndash;2026 &nbsp;|&nbsp; Platform: Raspberry Pi &nbsp;|&nbsp; Version: 2.0
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">1. Project Overview</div>
+      <p>The <strong>EduCore Exam Vault Cyber-Physical Honeypot</strong> is deployed on a Raspberry Pi to simulate a
+        secure institutional data center protecting digital exam scripts. It integrates real IoT hardware with a
+        deceptive 4-page web portal to detect, log, and alert on unauthorized access in real time.</p>
+      <p>The system runs as <strong>two separate processes</strong> launched by <code>start.sh</code>: a Flask web
+        server (<code>unified_server.py</code>) and a GPIO hardware controller (<code>hardware_trap.py</code>). They
+        communicate via an IPC mechanism using a shared JSON flag at <code>/tmp/honeypot_state.json</code>, polled every
+        500ms.</p>
+      <div class="info"><strong>Platform:</strong> Raspberry Pi 3B/4 &nbsp;|&nbsp; <strong>Port:</strong> 8080
+        &nbsp;|&nbsp; <strong>OS:</strong> Raspberry Pi OS Debian 12 Bookworm 64-bit &nbsp;|&nbsp;
+        <strong>Language:</strong> Python 3.11+
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">2. System Architecture</div>
+      <div class="subsec">2.1 Two-Process Design</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Process</th>
+            <th>File</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Process 1 &mdash; Web Server</strong></td>
+            <td><code>unified_server.py</code></td>
+            <td>Flask on port 8080. Serves all 4 trap pages. Handles all web logic, sends Telegram alerts, writes IPC
+              alarm flag to shared JSON. Cannot access GPIO directly.</td>
+          </tr>
+          <tr>
+            <td><strong>Process 2 &mdash; GPIO Owner</strong></td>
+            <td><code>hardware_trap.py</code></td>
+            <td>Sole owner of all GPIO pins. Polls <code>/tmp/honeypot_state.json</code> every 500ms. Fires buzzer+LED
+              when flag detected. Also monitors MC-38 for physical door breach independently.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="subsec">2.2 IPC Mechanism (Web &rarr; GPIO)</div>
+      <p>The Flask web process cannot access GPIO hardware directly. Alarm requests are passed via a shared JSON flag
+        file:</p>
+      <pre>unified_server.py  writes  {"alarm_requested": true}  to  /tmp/honeypot_state.json
+hardware_trap.py   polls file every 500ms
+                   on flag detected: GPIO 18 (Buzzer) ON + GPIO 23 (LED) ON
+                   resets flag to false after alarm</pre>
+      <div class="info"><strong>End-to-end latency:</strong> Physical alarm fires within &lt;500ms of any web-triggered
+        attack action.</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">3. Web Portal &mdash; 4 Pages</div>
+      <table>
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Page Name</th>
+            <th>Trap Behaviour</th>
+            <th>Alarm?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/</code></td>
+            <td>EduCore Exam Vault Dashboard</td>
+            <td>NOC-style monitor. Live DHT-11 temperature &amp; humidity, simulated vault servers (VAULT-MAIN-01,
+              VAULT-SEC-02, VAULT-DB-01, VAULT-ARCHIVE-01, VAULT-OFFLINE-03), network traffic chart, security event log.
+              Polls /api/sensors every 3s.</td>
+            <td>Telegram INFO only</td>
+          </tr>
+          <tr>
+            <td><code>/login</code></td>
+            <td>Secure Login</td>
+            <td>Accepts ANY credentials. On POST: captures username + password + IP + timestamp &rarr; Telegram CRITICAL
+              &rarr; redirects attacker to /admin?user=&lt;username&gt;.</td>
+            <td>Telegram CRITICAL only</td>
+          </tr>
+          <tr>
+            <td><code>/admin</code></td>
+            <td>Admin Panel (Main Trap)</td>
+            <td>Only reachable after login. Shows attacker username in sidebar, live DHT-11 data. Has 6 vault control
+              buttons. Clicking ANY button sends IPC flag &rarr; buzzer + LED + Telegram CRITICAL.</td>
+            <td>Buzzer+LED on button click</td>
+          </tr>
+          <tr>
+            <td><code>/emergency</code></td>
+            <td>System Status</td>
+            <td>Social engineering panic page. Shows fake &ldquo;VAULT TEMP CRITICAL&rdquo; with countdown timer. Claims
+              Sem-End Exam Scripts (May 2025) are at risk. Override form submission triggers alarm.</td>
+            <td>Buzzer+LED on form submit</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">3.1 Admin Panel &mdash; 6 Trap Buttons (each fires buzzer + LED + Telegram)</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Button Label</th>
+            <th>Description</th>
+            <th>API Action Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Seal Exam Vault</td>
+            <td>Force-lock all digital storage units</td>
+            <td>seal_exam_vault</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Verify Script Integrity</td>
+            <td>Run MD5 checksum on all PDF scripts</td>
+            <td>verify_script_integrity</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Lock Archive Access</td>
+            <td>Disable external network access to archives</td>
+            <td>lock_archive_access</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Export Exam Audit Trail</td>
+            <td>Generate signed examiner log report</td>
+            <td>export_audit_trail</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Reset Examiner Access</td>
+            <td>Force rotation of all faculty keys</td>
+            <td>reset_examiner_access</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Purge Cached Scripts</td>
+            <td>Clear local cache from memory banks</td>
+            <td>purge_cached_scripts</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">3.2 Complete Trigger Table</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Attacker Action</th>
+            <th>Telegram Alert</th>
+            <th>Severity</th>
+            <th>Buzzer + LED</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Visit Dashboard (/)</td>
+            <td>Yes</td>
+            <td>INFO</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td>Visit System Status (/emergency GET)</td>
+            <td>Yes</td>
+            <td>WARNING</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td>Submit Login Form (/login POST)</td>
+            <td>Yes + credentials captured</td>
+            <td>CRITICAL</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td>Reach Admin Panel (/admin GET)</td>
+            <td>Yes</td>
+            <td>CRITICAL</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td>Click any Admin Control Button</td>
+            <td>Yes + action name captured</td>
+            <td>CRITICAL</td>
+            <td>YES</td>
+          </tr>
+          <tr>
+            <td>Submit Emergency Override Form</td>
+            <td>Yes + credentials captured</td>
+            <td>CRITICAL</td>
+            <td>YES</td>
+          </tr>
+          <tr>
+            <td>Physical Door Opened (MC-38)</td>
+            <td>Yes + sensor data included</td>
+            <td>CRITICAL</td>
+            <td>YES</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">4. Hardware Requirements</div>
+      <div class="subsec">4.1 Component List</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Component</th>
+            <th>Specification</th>
+            <th>Qty</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Raspberry Pi</strong></td>
+            <td>Model 3B+ or 4 (1GB+ RAM), 40-pin GPIO header</td>
+            <td>1</td>
+            <td>Central controller. Runs both processes.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>MicroSD Card</strong></td>
+            <td>16GB Class 10, Raspberry Pi OS Bookworm 64-bit</td>
+            <td>1</td>
+            <td>OS and project file storage</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>DHT-11 Sensor</strong></td>
+            <td>Digital temp &amp; humidity, 3.3V&ndash;5V, &plusmn;2&deg;C / &plusmn;5% RH</td>
+            <td>1</td>
+            <td>Live telemetry: temp &amp; humidity displayed on dashboard, updated every 3s via GPIO 4</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>MC-38 Magnetic Reed Switch</strong></td>
+            <td>Normally Closed (NC), magnetic door/window sensor</td>
+            <td>1</td>
+            <td>Physical door breach detection on GPIO 17. Opening = CRITICAL alarm.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Active Buzzer Module</strong></td>
+            <td>5V active buzzer, integrated oscillator, ~85dB</td>
+            <td>1</td>
+            <td>Audible alarm on GPIO 18. Fires on: admin button click, override form, door breach.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Red LED</strong></td>
+            <td>5mm LED, forward voltage ~2V, 20mA max</td>
+            <td>1</td>
+            <td>Visual alarm on GPIO 23. Always fires together with buzzer.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Resistor</strong></td>
+            <td>330&Omega;, 1/4W carbon film</td>
+            <td>1</td>
+            <td>Current limiter for Red LED (in series between GPIO 23 and LED anode)</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Breadboard</strong></td>
+            <td>Half/full size solderless (400&ndash;830 tie points)</td>
+            <td>1</td>
+            <td>Component mounting and circuit prototyping</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>Jumper Wires</strong></td>
+            <td>Male-to-Female and Male-to-Male, 20cm</td>
+            <td>15&ndash;20</td>
+            <td>GPIO-to-component connections</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td><strong>Power Supply</strong></td>
+            <td>5V/2.5A Micro-USB (Pi 3B) or 5V/3A USB-C (Pi 4)</td>
+            <td>1</td>
+            <td>Powers the Raspberry Pi</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td><strong>Network</strong></td>
+            <td>Built-in 2.4GHz Wi-Fi or RJ45 Ethernet Cat5e</td>
+            <td>1</td>
+            <td>Web server access + Telegram Bot API connectivity</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">4.2 GPIO Pin Mapping (BCM Numbering)</div>
+      <p>All GPIO numbers use <strong>BCM (Broadcom) scheme</strong> as required by the <code>gpiozero</code> library.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>BCM GPIO</th>
+            <th>Physical Pin</th>
+            <th>Component</th>
+            <th>Direction</th>
+            <th>Behaviour</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>GPIO 4</strong></td>
+            <td>Pin 7</td>
+            <td>DHT-11 Data</td>
+            <td>Input</td>
+            <td>Single-wire protocol. Read every 3s by <code>sensor_hub.py</code> using adafruit-circuitpython-dht.</td>
+          </tr>
+          <tr>
+            <td><strong>GPIO 17</strong></td>
+            <td>Pin 11</td>
+            <td>MC-38 Reed Switch</td>
+            <td>Input</td>
+            <td>Pull-up enabled. Normally HIGH (closed). Goes LOW when door opens &rarr; CRITICAL alarm fires
+              immediately.</td>
+          </tr>
+          <tr>
+            <td><strong>GPIO 18</strong></td>
+            <td>Pin 12</td>
+            <td>Active Buzzer (+)</td>
+            <td>Output</td>
+            <td>HIGH = buzzer ON. Controlled exclusively by <code>hardware_trap.py</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>GPIO 23</strong></td>
+            <td>Pin 16</td>
+            <td>Red LED (via 330&Omega;)</td>
+            <td>Output</td>
+            <td>HIGH = LED ON. Always fires together with GPIO 18 buzzer. Never triggered independently.</td>
+          </tr>
+          <tr>
+            <td>3.3V / 5V</td>
+            <td>Pin 1, 2, 4</td>
+            <td>VCC supply</td>
+            <td>Power</td>
+            <td>DHT-11 &rarr; 3.3V &nbsp;|&nbsp; Active Buzzer &rarr; 5V</td>
+          </tr>
+          <tr>
+            <td>GND</td>
+            <td>Pin 6, 9, 14</td>
+            <td>Common Ground</td>
+            <td>Ground</td>
+            <td>Shared ground for DHT-11, MC-38, Buzzer, LED</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info"><strong>Alarm pair rule:</strong> GPIO 18 (Buzzer) and GPIO 23 (LED) always activate and
+        deactivate <em>together</em>. They are controlled as a unit by <code>hardware_trap.py</code>.</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">5. Software Requirements</div>
+      <div class="subsec">5.1 Operating System</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Specification</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>OS</strong></td>
+            <td>Raspberry Pi OS &mdash; Debian 12 Bookworm, 64-bit (arm64)</td>
+          </tr>
+          <tr>
+            <td><strong>Kernel</strong></td>
+            <td>Linux 6.x with GPIO subsystem enabled</td>
+          </tr>
+          <tr>
+            <td><strong>Python Version</strong></td>
+            <td>Python 3.11+ (pre-installed on Bookworm)</td>
+          </tr>
+          <tr>
+            <td><strong>Shell</strong></td>
+            <td>Bash &mdash; used in <code>start.sh</code> to launch both processes in sequence</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">5.2 System-Level Dependencies (apt)</div>
+      <pre>sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3-pip python3-venv liblgpio-dev swig python3-libgpiod git</pre>
+      <table>
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>python3-pip</code></td>
+            <td>Python package installer (pip)</td>
+          </tr>
+          <tr>
+            <td><code>python3-venv</code></td>
+            <td>Creates isolated Python virtual environments</td>
+          </tr>
+          <tr>
+            <td><code>liblgpio-dev</code></td>
+            <td>C headers required to compile the lgpio Python binding</td>
+          </tr>
+          <tr>
+            <td><code>swig</code></td>
+            <td>Generates Python wrappers from lgpio C code</td>
+          </tr>
+          <tr>
+            <td><code>python3-libgpiod</code></td>
+            <td>GPIO compatibility layer for Raspberry Pi OS Bookworm</td>
+          </tr>
+          <tr>
+            <td><code>git</code></td>
+            <td>Clone repo from GitHub; pull updates to the Pi</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">5.3 Python Libraries (pip)</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Library</th>
+            <th>Version</th>
+            <th>Install Command</th>
+            <th>Role in Project</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>flask</strong></td>
+            <td>&ge;3.0</td>
+            <td><code>pip install flask</code></td>
+            <td>Web framework for <code>unified_server.py</code>. Serves all 4 honeypot pages and REST API endpoints
+              (/api/sensors, /api/events, /api/action) on port 8080.</td>
+          </tr>
+          <tr>
+            <td><strong>requests</strong></td>
+            <td>&ge;2.28</td>
+            <td><code>pip install requests</code></td>
+            <td>HTTP client in <code>decoy_alert.py</code>. POSTs formatted alert messages to Telegram Bot API endpoint.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>python-dotenv</strong></td>
+            <td>&ge;1.0</td>
+            <td><code>pip install python-dotenv</code></td>
+            <td>Loads <code>BOT_TOKEN</code> and <code>CHAT_ID</code> from <code>.env</code> file at startup. Keeps
+              credentials out of source code.</td>
+          </tr>
+          <tr>
+            <td><strong>adafruit-circuitpython-dht</strong></td>
+            <td>&ge;3.7</td>
+            <td><code>pip install adafruit-circuitpython-dht</code></td>
+            <td>Adafruit driver for DHT-11 sensor on GPIO 4. Used in <code>sensor_hub.py</code> to read temperature and
+              humidity every 3 seconds.</td>
+          </tr>
+          <tr>
+            <td><strong>gpiozero</strong></td>
+            <td>&ge;2.0</td>
+            <td><code>pip install gpiozero</code></td>
+            <td>High-level GPIO library in <code>hardware_trap.py</code>. Controls buzzer (GPIO 18), LED (GPIO 23),
+              reads MC-38 switch (GPIO 17).</td>
+          </tr>
+          <tr>
+            <td><strong>lgpio</strong></td>
+            <td>&ge;0.2</td>
+            <td><code>pip install lgpio</code></td>
+            <td>Low-level GPIO backend for gpiozero. Required on Raspberry Pi OS Bookworm (replaces older RPi.GPIO).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">5.4 requirements.txt</div>
+      <pre>flask
+requests
+python-dotenv
+adafruit-circuitpython-dht
+gpiozero
+lgpio</pre>
+
+      <div class="subsec">5.5 Environment Configuration (.env)</div>
+      <pre>BOT_TOKEN=&lt;your_telegram_bot_token_from_botfather&gt;
+CHAT_ID=&lt;your_telegram_chat_id&gt;</pre>
+      <div class="warn">&#9888;&#65039; <strong>Security:</strong> The <code>.env</code> file is in
+        <code>.gitignore</code> and must NEVER be committed to GitHub. Use <code>.env.example</code> as a safe reference
+        template only.
+      </div>
+
+      <div class="subsec">5.6 Python Source Modules</div>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Process</th>
+            <th>Role</th>
+            <th>Key Libraries</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>unified_server.py</code></td>
+            <td>Process 1</td>
+            <td>Main Flask application. Routes: GET / (dashboard), GET+POST /login (credential trap), GET /admin (admin
+              panel trap), GET+POST /emergency (social engineering trap), GET /api/sensors (DHT-11 JSON), GET
+              /api/events (security log JSON), POST /api/action (admin button trap). Sends Telegram on every
+              interaction. Calls <code>request_alarm()</code> from sensor_hub for CRITICAL actions.</td>
+            <td>flask, requests, python-dotenv, threading, json, datetime</td>
+          </tr>
+          <tr>
+            <td><code>hardware_trap.py</code></td>
+            <td>Process 2</td>
+            <td>GPIO sole owner. Initializes: buzzer (GPIO 18), LED (GPIO 23), MC-38 switch (GPIO 17). Runs
+              <code>start_alarm_watcher()</code> background thread that polls /tmp/honeypot_state.json every 500ms and
+              fires GPIO alarm when <code>alarm_requested</code> is true. Also runs door monitor thread that watches
+              MC-38 for physical breach.
+            </td>
+            <td>gpiozero, lgpio, json, time, threading</td>
+          </tr>
+          <tr>
+            <td><code>sensor_hub.py</code></td>
+            <td>Process 1</td>
+            <td>DHT-11 interface module. Reads GPIO 4 every 3s, caches last valid reading. Provides
+              <code>get_sensor_data()</code> for /api/sensors and <code>request_alarm()</code> which writes IPC flag to
+              /tmp/honeypot_state.json.
+            </td>
+            <td>adafruit-circuitpython-dht, json, time, threading</td>
+          </tr>
+          <tr>
+            <td><code>decoy_alert.py</code></td>
+            <td>Process 1</td>
+            <td>Telegram sender. <code>send_telegram_alert(message)</code> POSTs to Telegram Bot API. Loads BOT_TOKEN
+              and CHAT_ID from .env via python-dotenv.</td>
+            <td>requests, python-dotenv, os</td>
+          </tr>
+          <tr>
+            <td><code>start.sh</code></td>
+            <td>Launcher</td>
+            <td>Bash script. Starts <code>hardware_trap.py</code> first (GPIO ownership), then
+              <code>unified_server.py</code> (web server). Both run as background processes.
+            </td>
+            <td>bash</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subsec">5.7 External Services</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+            <th>Requirement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Telegram Bot API</strong></td>
+            <td>Real-time attack alerts to administrator. Messages include: event type, severity, attacker IP,
+              timestamp, captured credentials or action name.</td>
+            <td>Internet connection + Bot Token from @BotFather + Chat ID</td>
+          </tr>
+          <tr>
+            <td><strong>Google Fonts CDN</strong></td>
+            <td>Loads Inter and JetBrains Mono fonts for web portal UI</td>
+            <td>Internet on client browser (gracefully degrades offline)</td>
+          </tr>
+          <tr>
+            <td><strong>GitHub</strong></td>
+            <td>Source code hosting. Used for <code>git pull</code> deployments to the Pi.</td>
+            <td>git installed; HTTPS or SSH access</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">6. Installation Steps</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Step</th>
+            <th>Command / Action</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1. System deps</td>
+            <td><code>sudo apt install -y python3-pip python3-venv liblgpio-dev swig python3-libgpiod git</code></td>
+            <td>Run once after flashing Pi OS</td>
+          </tr>
+          <tr>
+            <td>2. Clone repo</td>
+            <td>
+              <code>git clone https://github.com/SHRAVAN-AMBEER/cyber-physical-honeypot.git && cd cyber-physical-honeypot</code>
+            </td>
+            <td>&mdash;</td>
+          </tr>
+          <tr>
+            <td>3. Virtual env</td>
+            <td><code>python3 -m venv venv && source venv/bin/activate</code></td>
+            <td>Activate before each session</td>
+          </tr>
+          <tr>
+            <td>4. Install libs</td>
+            <td><code>pip install -r requirements.txt</code></td>
+            <td>Installs all 6 Python packages</td>
+          </tr>
+          <tr>
+            <td>5. Configure</td>
+            <td>Create <code>.env</code> with BOT_TOKEN and CHAT_ID</td>
+            <td>Copy from <code>.env.example</code></td>
+          </tr>
+          <tr>
+            <td>6. Launch</td>
+            <td><code>bash start.sh</code></td>
+            <td>Starts hardware_trap.py then unified_server.py</td>
+          </tr>
+          <tr>
+            <td>7. Access</td>
+            <td>Open <code>http://&lt;pi-ip&gt;:8080/</code> in any browser</td>
+            <td>Get Pi IP with <code>hostname -I</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info"><strong>Update on Pi:</strong>
+        <code>cd ~/cyber-physical-honeypot && git pull origin main && bash start.sh</code>
+      </div>
+    </div>
+
+    <div class="footer">
+      Chaitanya Bharathi Institute of Technology (CBIT), Hyderabad &nbsp;|&nbsp;
+      Department of Information Technology &nbsp;|&nbsp;
+      EduCore Exam Vault Cyber-Physical Honeypot &nbsp;|&nbsp; 2025&ndash;2026
+    </div>
+
+  </div>
+</body>
+
+</html>
