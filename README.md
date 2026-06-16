@@ -1,10 +1,10 @@
 # 🏛️ EduCore Exam Vault — Cyber-Physical Honeypot System
 
-> A unified cyber-physical honeypot deployed on a Raspberry Pi that simulates a secure institutional examination data center. Combines a high-fidelity 4-page deceptive web portal with real-time physical GPIO alarms (buzzer + LED) and instant Telegram notifications to detect, log, and trap unauthorized access attempts.
+A unified cyber-physical honeypot deployed on a Raspberry Pi that simulates a secure institutional examination data center. Combines a high-fidelity 4-page deceptive web portal with real-time physical GPIO alarms (buzzer + LED) and instant Telegram notifications to detect, log, and trap unauthorized access attempts.
 
 ---
 
-## 📌 Table of Contents
+##  Table of Contents
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
 - [How It Works](#how-it-works)
@@ -19,7 +19,7 @@
 
 ---
 
-## 📖 Overview
+##  Overview
 
 This project is a **cyber-physical honeypot** deployed on a Raspberry Pi. It simulates a sensitive institutional data center — the **EduCore Exam Vault** — that stores digital exam scripts. The system consists of two tightly integrated layers:
 
@@ -30,7 +30,7 @@ Any unauthorized interaction — from visiting pages to clicking simulated admin
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -77,7 +77,7 @@ hardware_trap.py   ──polls every 500ms──►┘
 
 ---
 
-## ⚙️ How It Works
+##  How It Works
 
 ### Cyber Layer
 1. Attacker discovers the portal at `http://<pi-ip>:8080/`
@@ -94,7 +94,7 @@ hardware_trap.py   ──polls every 500ms──►┘
 
 ---
 
-## 🌐 Web Portal Pages
+##  Web Portal Pages
 
 | URL | Page Name | Purpose | Alarm? |
 |---|---|---|---|
@@ -116,7 +116,7 @@ hardware_trap.py   ──polls every 500ms──►┘
 
 ---
 
-## ⚡ Trigger Table
+##  Trigger Table
 
 | Attacker Action | Telegram Alert | Severity | Buzzer + LED |
 |---|---|---|---|
